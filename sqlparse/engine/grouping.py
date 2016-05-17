@@ -102,7 +102,7 @@ def group_case(tlist):
 
 @recurse()
 def group_identifier(tlist):
-    T_IDENT = (T.String.Symbol, T.Name)
+    T_IDENT = (T.String.Symbol, T.Name, T.Wildcard)
     if isinstance(tlist, (sql.Identifier, sql.Function)):
         return
 
@@ -249,7 +249,7 @@ def group_order(tlist):
         prev = tlist.token_prev(token)
         if imt(prev, i=sql.Identifier, t=T.Number):
             tokens = tlist.tokens_between(prev, token)
-            token = tlist.group_tokens(sql.Identifier, tokens)
+            token = tlist.group_tokens(sql.Identifier, tokens, extend=True)
         token = tlist.token_next_by(t=T.Keyword.Order, idx=token)
 
 
@@ -279,6 +279,74 @@ def group_clauses(tlist, cls, clause=None, i=None):
             token = tlist.token_next_by(i=i, m=cls.M_OPEN, idx=token)
 
 
+def group_cte(tlist):
+    group_clauses(tlist, sql.CTE)
+
+
+def group_as_cte(tlist):
+    def lfunc(tk):
+        if imt(tk, t=(T.String.Symbol, T.Name)):
+            tk.ttype = T.Alias
+            return True
+
+    def rfunc(tk):
+        if imt(tk, i=sql.Subquery):
+            return True
+
+    _group_left_right(tlist, sql.Identifier.M_AS, sql.CTE_Subquery,
+                      valid_left=lfunc, valid_right=rfunc)
+
+
+def group_over(tlist):
+    lfunc = lambda tk: imt(tk, i=sql.Function)
+    rfunc = lambda tk: imt(tk, i=sql.Parenthesis)
+
+    _group_left_right(tlist, sql.Function.M_OVER, sql.Function,
+                      valid_left=lfunc, valid_right=rfunc)
+
+
+def group_connect(tlist):
+    group_clauses(tlist, sql.Connect)
+
+
+def group_join(tlist):
+    group_clauses(tlist, sql.Join_Clause)
+
+
+@recurse()
+def group_subquery(tlist):
+    token = tlist.token_next_by(i=sql.Parenthesis)
+    while token:
+        if token.is_subquery():
+            idx = tlist.token_index(token)
+            tlist.tokens[idx] = sql.Subquery(token.tokens)
+            token = tlist[idx]
+
+        token = tlist.token_next_by(i=sql.Parenthesis, idx=token)
+
+
+@recurse(sql.ComparisonList)
+def group_comparison_list(tlist):
+    I_IDENT_LIST = (sql.Function, sql.Case, sql.Identifier, sql.Comparison,
+                    sql.ComparisonList, sql.Operation)
+    T_IDENT_LIST = T_NUMERICAL + T_STRING + T_NAME + (
+        T.Keyword, T.Comment, T.Wildcard)
+
+    func = lambda t: imt(t, m=(T.Keyword, ('null', 'role')),
+                         i=I_IDENT_LIST, t=T_IDENT_LIST)
+    token = tlist.token_next_by(m=sql.ComparisonList.M_SEPARATOR)
+
+    while token:
+        before, after = tlist.token_prev(token), tlist.token_next(token)
+
+        if func(before) and func(after):
+            tokens = tlist.tokens_between(before, after)
+            token = tlist.group_tokens(sql.ComparisonList, tokens,
+                                       extend=True)
+        token = tlist.token_next_by(m=sql.ComparisonList.M_SEPARATOR,
+                                    idx=token)
+
+
 def group_select(tlist):
     group_clauses(tlist, sql.Select)
 
@@ -305,13 +373,18 @@ def group(stmt):
         group_brackets,
         group_case,
 
+        group_cte,
         group_select,
         group_from,
         group_where,
+        group_connect,
         group_group_by,
         group_order_by,
 
+        group_subquery,
+
         group_functions,
+        group_over,
 
         group_period,
 
@@ -319,12 +392,15 @@ def group(stmt):
         group_comparison,
 
         group_as,
+        group_as_cte,
         group_aliased,
 
         group_identifier,
         group_order,
 
+        group_join,
         group_table_stmt,
+        group_comparison_list,
         group_identifier_list,
     ]:
         func(stmt)

@@ -71,7 +71,7 @@ class Token(object):
         If *regex* is ``True`` (default is ``False``) the given values are
         treated as regular expressions.
         """
-        type_matched = self.ttype is ttype
+        type_matched = self.ttype in ttype
         if not type_matched or values is None:
             return type_matched
 

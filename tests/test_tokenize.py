@@ -148,7 +148,7 @@ def test_stream_error():
 def test_parse_join(expr):
     p = sqlparse.parse('{0} foo'.format(expr))[0]
     assert len(p.tokens) == 3
-    assert p.tokens[0].ttype is T.Keyword
+    assert p.tokens[0].ttype is T.Keyword.Join
 
 
 @pytest.mark.parametrize('s', ['END IF', 'END   IF', 'END\t\nIF',

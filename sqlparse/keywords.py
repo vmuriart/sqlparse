@@ -70,15 +70,19 @@ SQL_REGEX = {
         # otherwise it's probably an array index
         (r'(?<![\w\])])(\[[^\]]+\])', tokens.Name),
         (r'((LEFT\s+|RIGHT\s+|FULL\s+)?(INNER\s+|OUTER\s+|STRAIGHT\s+)?'
-         r'|(CROSS\s+|NATURAL\s+)?)?JOIN\b', tokens.Keyword),
+         r'|(CROSS\s+|NATURAL\s+)?)?JOIN\b', tokens.Keyword.Join),
+        # Combine 2 work tokens into 1?  Not Implemented
+        # (r'(CONNECT|GROUP|ORDER|PARTITION)\s+BY\b', tokens.Keyword),
+
         (r'END(\s+IF|\s+LOOP|\s+WHILE)?\b', tokens.Keyword),
-        (r'NOT\s+NULL\b', tokens.Keyword),
+        (r'NOT\s+(NULL|LIKE|IN)\b', tokens.Operator.Comparison),
         (r'CREATE(\s+OR\s+REPLACE)?\b', tokens.Keyword.DDL),
         (r'DOUBLE\s+PRECISION\b', tokens.Name.Builtin),
 
         (r'[_A-Z]\w*', is_keyword),
 
         (r'[;:()\[\],\.]', tokens.Punctuation),
+        (r'(!=|<>)', tokens.Operator.Comparison),
         (r'[<>=~!]+', tokens.Operator.Comparison),
         (r'[+/@#%^&|`?^-]+', tokens.Operator),
     ]}
@@ -402,6 +406,7 @@ KEYWORDS = {
     'ORDINALITY': tokens.Keyword,
     'OUT': tokens.Keyword,
     'OUTPUT': tokens.Keyword,
+    'OVER': tokens.Keyword,
     'OVERLAPS': tokens.Keyword,
     'OVERLAY': tokens.Keyword,
     'OVERRIDING': tokens.Keyword,
@@ -657,13 +662,13 @@ KEYWORDS_COMMON = {
     'WHERE': tokens.Keyword,
     'FROM': tokens.Keyword,
     'INNER': tokens.Keyword,
-    'JOIN': tokens.Keyword,
-    'STRAIGHT_JOIN': tokens.Keyword,
+    'JOIN': tokens.Keyword.Join,
+    'STRAIGHT_JOIN': tokens.Keyword.Join,
     'AND': tokens.Keyword,
     'OR': tokens.Keyword,
-    'LIKE': tokens.Keyword,
+    'LIKE': tokens.Operator.Comparison,
     'ON': tokens.Keyword,
-    'IN': tokens.Keyword,
+    'IN': tokens.Operator.Comparison,
     'SET': tokens.Keyword,
 
     'BY': tokens.Keyword,

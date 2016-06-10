@@ -20,27 +20,20 @@ T_NAME = (T.Name, T.Name.Placeholder)
 
 def _group_left_right(tlist, m, cls,
                       valid_left=lambda t: t is not None,
-                      valid_right=lambda t: t is not None,
-                      semicolon=False):
+                      valid_center=lambda t: t is not None,
+                      valid_right=lambda t: t is not None):
     """Groups together tokens that are joined by a middle token. ie. x < y"""
+    [_group_left_right(sgroup, m, cls, valid_left, valid_center, valid_right)
+     for sgroup in tlist.get_sublists() if not isinstance(sgroup, cls)]
 
-    for token in list(tlist):
-        if token.is_group() and not isinstance(token, cls):
-            _group_left_right(token, m, cls, valid_left, valid_right,
-                              semicolon)
-
-        if not token.match(*m):
-            continue
-
+    token = tlist.token_next_by(m=m)
+    while token:
         left, right = tlist.token_prev(token), tlist.token_next(token)
 
-        if valid_left(left) and valid_right(right):
-            if semicolon:
-                # only overwrite if a semicolon present.
-                sright = tlist.token_next_by(m=M_SEMICOLON, idx=right)
-                right = sright or right
+        if valid_left(left) and valid_center(token) and valid_right(right):
             tokens = tlist.tokens_between(left, right)
-            tlist.group_tokens(cls, tokens, extend=True)
+            token = tlist.group_tokens(cls, tokens, extend=True)
+        token = tlist.token_next_by(m=m, idx=token)
 
 
 def _group_matching(tlist, cls):
@@ -77,14 +70,18 @@ def group_begin(tlist):
 
 def group_as(tlist):
     lfunc = lambda tk: not imt(tk, t=T.Keyword) or tk.value == 'NULL'
-    rfunc = lambda tk: not imt(tk, t=(T.DML, T.DDL))
+
+    def rfunc(tk):
+        if imt(tk, t=(T.String.Symbol, T.Name)):
+            tk.ttype = T.Alias
+            return True
+
     _group_left_right(tlist, (T.Keyword, 'AS'), sql.Identifier,
                       valid_left=lfunc, valid_right=rfunc)
 
 
 def group_assignment(tlist):
-    _group_left_right(tlist, (T.Assignment, ':='), sql.Assignment,
-                      semicolon=True)
+    _group_left_right(tlist, (T.Assignment, ':='), sql.Assignment)
 
 
 def group_comparison(tlist):
@@ -103,9 +100,11 @@ def group_case(tlist):
     _group_matching(tlist, sql.Case)
 
 
-@recurse(sql.Identifier)
+@recurse()
 def group_identifier(tlist):
     T_IDENT = (T.String.Symbol, T.Name)
+    if isinstance(tlist, (sql.Identifier, sql.Function)):
+        return
 
     token = tlist.token_next_by(t=T_IDENT)
     while token:
@@ -157,10 +156,13 @@ def group_operator(tlist):
 
 @recurse(sql.IdentifierList)
 def group_identifier_list(tlist):
-    I_IDENT_LIST = (sql.Function, sql.Case, sql.Identifier, sql.Comparison,
+    I_IDENT_LIST = (sql.Function, sql.Case, sql.Identifier,
                     sql.IdentifierList, sql.Operation)
     T_IDENT_LIST = (T_NUMERICAL + T_STRING + T_NAME +
                     (T.Keyword, T.Comment, T.Wildcard))
+
+    if isinstance(tlist, sql.From):
+        return
 
     func = lambda t: imt(t, i=I_IDENT_LIST, m=M_ROLE, t=T_IDENT_LIST)
     token = tlist.token_next_by(m=M_COMMA)
@@ -196,34 +198,23 @@ def group_comments(tlist):
         token = tlist.token_next_by(t=T.Comment, idx=token)
 
 
-@recurse(sql.Where)
 def group_where(tlist):
-    token = tlist.token_next_by(m=sql.Where.M_OPEN)
-    while token:
-        end = tlist.token_next_by(m=sql.Where.M_CLOSE, idx=token)
-
-        if end is None:
-            tokens = tlist.tokens_between(token, tlist._groupable_tokens[-1])
-        else:
-            tokens = tlist.tokens_between(
-                token, tlist.tokens[tlist.token_index(end) - 1])
-
-        token = tlist.group_tokens(sql.Where, tokens)
-        token = tlist.token_next_by(m=sql.Where.M_OPEN, idx=token)
+    group_clauses(tlist, sql.Where)
 
 
 @recurse()
 def group_aliased(tlist):
     I_ALIAS = (sql.Parenthesis, sql.Function, sql.Case, sql.Identifier,
-               sql.Operation)
+               sql.Operation, sql.Subquery)
 
-    token = tlist.token_next_by(i=I_ALIAS, t=T.Number)
+    token = tlist.token_next_by(i=I_ALIAS, t=T_NUMERICAL + (T.Name,))
     while token:
         next_ = tlist.token_next(token)
-        if imt(next_, i=sql.Identifier):
+        if imt(next_, t=(T.String.Symbol, T.Name)):
             tokens = tlist.tokens_between(token, next_)
             token = tlist.group_tokens(sql.Identifier, tokens, extend=True)
-        token = tlist.token_next_by(i=I_ALIAS, t=T.Number, idx=token)
+        token = tlist.token_next_by(i=I_ALIAS, t=T_NUMERICAL + (T.Name,),
+                                    idx=token)
 
 
 def group_typecasts(tlist):
@@ -250,6 +241,7 @@ def group_functions(tlist):
         token = tlist.token_next_by(t=T.Name, idx=token)
 
 
+@recurse()
 def group_order(tlist):
     """Group together Identifier and Asc/Desc token"""
     token = tlist.token_next_by(t=T.Keyword.Order)
@@ -272,34 +264,67 @@ def align_comments(tlist):
         token = tlist.token_next_by(i=sql.Comment, idx=token)
 
 
+def group_clauses(tlist, cls, clause=None, i=None):
+    [group_clauses(sgroup, cls, clause, i) for sgroup in tlist.get_sublists()
+     if not isinstance(sgroup, cls)]
+
+    if clause is None or imt(tlist, i=clause):
+        token = tlist.token_next_by(i=i, m=cls.M_OPEN)
+        while token:
+            end = tlist.token_next_by(m=cls.M_CLOSE, idx=token)
+            end = tlist.token_prev(idx=end) or tlist._groupable_tokens[-1]
+
+            tokens = tlist.tokens_between(token, end)
+            token = tlist.group_tokens(cls, tokens)
+            token = tlist.token_next_by(i=i, m=cls.M_OPEN, idx=token)
+
+
+def group_select(tlist):
+    group_clauses(tlist, sql.Select)
+
+
+def group_from(tlist):
+    group_clauses(tlist, sql.From)
+
+
+def group_group_by(tlist):
+    group_clauses(tlist, sql.Group)
+
+
+def group_order_by(tlist):
+    group_clauses(tlist, sql.Order)
+
+
+def group_table_stmt(tlist):
+    group_clauses(tlist, sql.Table_Group, sql.From, i=sql.Identifier)
+
+
 def group(stmt):
     for func in [
-        group_comments,
         group_parenthesis,
         group_brackets,
-        group_if,
-        group_for,
-        group_begin,
         group_case,
 
+        group_select,
+        group_from,
         group_where,
+        group_group_by,
+        group_order_by,
+
         group_functions,
 
         group_period,
-        group_arrays,
-        group_identifier,
 
         group_operator,
         group_comparison,
 
-        group_assignment,
-        group_typecasts,
-
-        group_order,
-
         group_as,
         group_aliased,
 
+        group_identifier,
+        group_order,
+
+        group_table_stmt,
         group_identifier_list,
     ]:
         func(stmt)

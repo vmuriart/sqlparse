@@ -312,65 +312,6 @@ class TokenList(Token):
         else:
             self.insert_before(next_token, token)
 
-    def has_alias(self):
-        """Returns ``True`` if an alias is present."""
-        return self.get_alias() is not None
-
-    def get_alias(self):
-        """Returns the alias for this identifier or ``None``."""
-
-        # "name AS alias"
-        kw = self.token_next_by(m=(T.Keyword, 'AS'))
-        if kw is not None:
-            return self._get_first_name(kw, keywords=True)
-
-        # "name alias" or "complicated column expression alias"
-        if len(self.tokens) > 2 and self.token_next_by(t=T.Whitespace):
-            return self._get_first_name(reverse=True)
-
-    def get_name(self):
-        """Returns the name of this identifier.
-
-        This is either it's alias or it's real name. The returned valued can
-        be considered as the name under which the object corresponding to
-        this identifier is known within the current statement.
-        """
-        return self.get_alias() or self.get_real_name()
-
-    def get_real_name(self):
-        """Returns the real name (object name) of this identifier."""
-        # a.b
-        dot = self.token_next_by(m=(T.Punctuation, '.'))
-        return self._get_first_name(dot)
-
-    def get_parent_name(self):
-        """Return name of the parent object if any.
-
-        A parent object is identified by the first occuring dot.
-        """
-        dot = self.token_next_by(m=(T.Punctuation, '.'))
-        prev_ = self.token_prev(dot)
-        return remove_quotes(prev_.value) if prev_ is not None else None
-
-    def _get_first_name(self, idx=None, reverse=False, keywords=False):
-        """Returns the name of the first token with a name"""
-
-        if idx and not isinstance(idx, int):
-            idx = self.token_index(idx) + 1
-
-        tokens = self.tokens[idx:] if idx else self.tokens
-        tokens = reversed(tokens) if reverse else tokens
-        types = [T.Name, T.Wildcard, T.String.Symbol]
-
-        if keywords:
-            types.append(T.Keyword)
-
-        for token in tokens:
-            if token.ttype in types:
-                return remove_quotes(token.value)
-            elif isinstance(token, (Identifier, Function)):
-                return token.get_name()
-
 
 class Statement(TokenList):
     """Represents a SQL statement."""
@@ -431,6 +372,16 @@ class Identifier(TokenList):
         ordering = self.token_next_by(t=T.Keyword.Order)
         return ordering.normalized if ordering else None
 
+    def get_alias(self):
+        """Returns the alias for this identifier or ``None``."""
+        # "name AS alias"
+        alias = self.token_next_by(t=T.Alias)
+        return alias.value if alias else None
+
+    def get_name(self):
+        dot = self.token_next_by(m=self.M_PERIOD)
+        next_ = self.token_next(dot)
+        return remove_quotes(next_)
     def get_array_indices(self):
         """Returns an iterator of index token lists"""
 
@@ -439,6 +390,14 @@ class Identifier(TokenList):
                 # Use [1:-1] index to discard the square brackets
                 yield token.tokens[1:-1]
 
+    def get_parent_name(self):
+        """Return name of the parent object if any.
+
+        A parent object is identified by the first occuring dot.
+        """
+        dot = self.token_next_by(m=self.M_PERIOD)
+        prev_ = self.token_prev(dot)
+        return remove_quotes(prev_)
 
 class IdentifierList(TokenList):
     """A list of :class:`~sqlparse.sql.Identifier`\'s."""
@@ -461,6 +420,9 @@ class Parenthesis(TokenList):
     @property
     def _groupable_tokens(self):
         return self.tokens[1:-1]
+
+    def is_subquery(self):
+        return self.token_next_by(i=Select) is not None
 
 
 class SquareBrackets(TokenList):
@@ -512,8 +474,8 @@ class Comment(TokenList):
 class Where(TokenList):
     """A WHERE clause."""
     M_OPEN = T.Keyword, 'WHERE'
-    M_CLOSE = T.Keyword, ('ORDER', 'GROUP', 'LIMIT', 'UNION', 'EXCEPT',
-                          'HAVING')
+    M_CLOSE = T.Keyword, ('ORDER BY', 'GROUP BY', 'LIMIT', 'UNION', 'EXCEPT', 'HAVING', 'CONNECT BY')
+
 
 
 class Case(TokenList):
@@ -572,6 +534,7 @@ class Case(TokenList):
 class Function(TokenList):
     """A function or procedure call."""
 
+    M_OVER = T.Keyword, 'OVER'
     def get_parameters(self):
         """Return a list of parameters."""
         parenthesis = self.tokens[-1]
@@ -591,3 +554,73 @@ class Begin(TokenList):
 
 class Operation(TokenList):
     """Grouping of operations"""
+
+
+class Subquery(TokenList):
+    """Tokens between parenthesis."""
+
+    @property
+    def _groupable_tokens(self):
+        return self.tokens[1:-1]
+
+
+class Connect(TokenList):
+    """A WHERE clause."""
+    M_OPEN = T.Keyword, 'CONNECT BY'
+    M_CLOSE = T.Keyword, ('ORDER BY', 'GROUP BY', 'LIMIT', 'UNION', 'EXCEPT', 'HAVING')
+
+
+class Group(TokenList):
+    """A WHERE clause."""
+    M_OPEN = T.Keyword, 'GROUP BY'
+    M_CLOSE = T.Keyword, ('ORDER BY', 'LIMIT', 'UNION', 'EXCEPT', 'HAVING')
+
+
+class Order(TokenList):
+    """A WHERE clause."""
+    M_OPEN = T.Keyword, 'ORDER BY'
+    M_CLOSE = T.Keyword, ('LIMIT', 'UNION', 'EXCEPT', 'HAVING')
+
+
+class Table_Group(TokenList):
+    """A WHERE clause."""
+    M_OPEN = T.Name, None
+    M_CLOSE = T.Punctuation, ','
+
+
+class CTE(TokenList):
+    M_OPEN = T.CTE, 'WITH'
+    M_CLOSE = T.Keyword.DML, 'SELECT'
+
+
+class Select(TokenList):
+    M_OPEN = T.Keyword.DML, 'SELECT'
+    M_CLOSE = T.Keyword, 'FROM'
+
+
+class From(TokenList):
+    M_OPEN = T.Keyword, 'FROM'
+    M_CLOSE = T.Keyword, ('WHERE', 'ORDER BY', 'GROUP BY', 'LIMIT', 'UNION', 'EXCEPT', 'HAVING', 'CONNECT BY')
+
+
+class ComparisonList(TokenList):
+    """A list of :class:`~sqlparse.sql.Identifier`\'s."""
+    M_SEPARATOR = T.Keyword, ('AND', 'OR')
+
+    def get_comparisons(self):
+        """Returns the identifiers.
+        Whitespaces and punctuations are not included in this generator.
+        """
+        for token in self.tokens:
+            if not (token.is_whitespace() or imt(token, m=self.M_SEPARATOR)):
+                yield token
+
+
+class CTE_Subquery(TokenList):
+    M_OPEN = T.Keyword.Join, None
+    M_CLOSE = [(T.Keyword.Join, None), (T.Punctuation, ',')]
+
+
+class Join_Clause(TokenList):
+    M_OPEN = T.Keyword.Join, None
+    M_CLOSE = [(T.Keyword.Join, None), (T.Punctuation, ',')]

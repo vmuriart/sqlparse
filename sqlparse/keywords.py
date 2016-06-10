@@ -15,6 +15,7 @@ def is_keyword(value):
     return (KEYWORDS_COMMON.get(val) or KEYWORDS.get(val, tokens.Name)), value
 
 
+# Order only matters if they begin w same characters
 SQL_REGEX = {
     'root': [
         (r'(--|# )\+.*?(\r\n|\r|\n|$)', tokens.Comment.Single.Hint),
@@ -43,16 +44,17 @@ SQL_REGEX = {
 
         # add whitelisting Keywords and rest be func.
         # leaving here until decide which should be whitelisted
-        (r'(CASE|IN|VALUES|USING)\b', tokens.Keyword),
-        (r'\w+(?=\()', tokens.Name),
-
         # handle multi worded keywords, built-ins
         (r'NOT\s+NULL\b', tokens.Keyword),
         (r'DOUBLE\s+PRECISION\b', tokens.Name.Builtin),
         (r'CREATE(\s+OR\s+REPLACE)?\b', tokens.Keyword.DDL),
+        (r'(CONNECT|GROUP|ORDER|PARTITION)\s+BY\b', tokens.Keyword),
+        (r'NOT\s+LIKE\b', tokens.Operator.Comparison),
+        (r'NOT\s+IN\b', tokens.Operator.Comparison),
+
         (r'END(\s+IF|\s+LOOP|\s+WHILE)?\b', tokens.Keyword),
         (r'((LEFT\s+|RIGHT\s+|FULL\s+)?(INNER\s+|OUTER\s+|STRAIGHT\s+)?'
-         r'|(CROSS\s+|NATURAL\s+)?)?JOIN\b', tokens.Keyword),
+         r'|(CROSS\s+|NATURAL\s+)?)?JOIN\b', tokens.Keyword.Join),
 
         # handles single word keywords
         (r'\w+', is_keyword),
@@ -80,6 +82,7 @@ SQL_REGEX = {
 
         (r'[+/@#%^&|`?^-]+', tokens.Operator),
         (r'[;:(),\[\]\.]', tokens.Punctuation),
+        (r'(!=|<>)', tokens.Operator.Comparison),
         (r'[<>=~!]+', tokens.Operator.Comparison),
 
         # not a real string literal in ANSI SQL:
@@ -92,7 +95,6 @@ SQL_REGEX = [(re.compile(rx, FLAGS).match, tt) for rx, tt in SQL_REGEX['root']]
 
 KEYWORDS = {
     'ABORT': tokens.Keyword,
-    'ABS': tokens.Keyword,
     'ABSOLUTE': tokens.Keyword,
     'ACCESS': tokens.Keyword,
     'ADA': tokens.Keyword,
@@ -115,7 +117,6 @@ KEYWORDS = {
     'AT': tokens.Keyword,
     'ATOMIC': tokens.Keyword,
     'AUTHORIZATION': tokens.Keyword,
-    'AVG': tokens.Keyword,
 
     'BACKWARD': tokens.Keyword,
     'BEFORE': tokens.Keyword,
@@ -133,7 +134,6 @@ KEYWORDS = {
     'CARDINALITY': tokens.Keyword,
     'CASCADE': tokens.Keyword,
     'CASCADED': tokens.Keyword,
-    'CAST': tokens.Keyword,
     'CATALOG': tokens.Keyword,
     'CATALOG_NAME': tokens.Keyword,
     'CHAIN': tokens.Keyword,
@@ -151,7 +151,6 @@ KEYWORDS = {
     'CLOB': tokens.Keyword,
     'CLOSE': tokens.Keyword,
     'CLUSTER': tokens.Keyword,
-    'COALESCE': tokens.Keyword,
     'COBOL': tokens.Keyword,
     'COLLATE': tokens.Keyword,
     'COLLATION': tokens.Keyword,
@@ -180,10 +179,8 @@ KEYWORDS = {
     'CONTAINS': tokens.Keyword,
     'CONTINUE': tokens.Keyword,
     'CONVERSION': tokens.Keyword,
-    'CONVERT': tokens.Keyword,
     'COPY': tokens.Keyword,
     'CORRESPONTING': tokens.Keyword,
-    'COUNT': tokens.Keyword,
     'CREATEDB': tokens.Keyword,
     'CREATEUSER': tokens.Keyword,
     'CROSS': tokens.Keyword,
@@ -247,7 +244,6 @@ KEYWORDS = {
     'EXISTING': tokens.Keyword,
     'EXISTS': tokens.Keyword,
     'EXTERNAL': tokens.Keyword,
-    'EXTRACT': tokens.Keyword,
 
     'FALSE': tokens.Keyword,
     'FETCH': tokens.Keyword,
@@ -306,7 +302,7 @@ KEYWORDS = {
     'INTERSECT': tokens.Keyword,
     'INTO': tokens.Keyword,
     'INVOKER': tokens.Keyword,
-    'IS': tokens.Keyword,
+    'IS': tokens.Operator.Comparison,
     'ISNULL': tokens.Keyword,
     'ISOLATION': tokens.Keyword,
     'ITERATE': tokens.Keyword,
@@ -322,7 +318,6 @@ KEYWORDS = {
     'LAST': tokens.Keyword,
     'LATERAL': tokens.Keyword,
     'LEADING': tokens.Keyword,
-    'LENGTH': tokens.Keyword,
     'LESS': tokens.Keyword,
     'LEVEL': tokens.Keyword,
     'LIMIT': tokens.Keyword,
@@ -334,7 +329,6 @@ KEYWORDS = {
     'LOCATION': tokens.Keyword,
     'LOCATOR': tokens.Keyword,
     'LOCK': tokens.Keyword,
-    'LOWER': tokens.Keyword,
 
     # 'M': tokens.Keyword,
     'MAP': tokens.Keyword,
@@ -346,7 +340,6 @@ KEYWORDS = {
     'METHOD': tokens.Keyword,
     'MINUTE': tokens.Keyword,
     'MINVALUE': tokens.Keyword,
-    'MOD': tokens.Keyword,
     'MODE': tokens.Keyword,
     'MODIFIES': tokens.Keyword,
     'MODIFY': tokens.Keyword,
@@ -372,7 +365,6 @@ KEYWORDS = {
     'NOTNULL': tokens.Keyword,
     'NULL': tokens.Keyword,
     'NULLABLE': tokens.Keyword,
-    'NULLIF': tokens.Keyword,
 
     'OBJECT': tokens.Keyword,
     'OCTET_LENGTH': tokens.Keyword,
@@ -383,13 +375,13 @@ KEYWORDS = {
     'OLD': tokens.Keyword,
     'ONLY': tokens.Keyword,
     'OPEN': tokens.Keyword,
-    'OPERATION': tokens.Keyword,
     'OPERATOR': tokens.Keyword,
     'OPTION': tokens.Keyword,
     'OPTIONS': tokens.Keyword,
     'ORDINALITY': tokens.Keyword,
     'OUT': tokens.Keyword,
     'OUTPUT': tokens.Keyword,
+    'OVER': tokens.Keyword,
     'OVERLAPS': tokens.Keyword,
     'OVERLAY': tokens.Keyword,
     'OVERRIDING': tokens.Keyword,
@@ -495,7 +487,6 @@ KEYWORDS = {
     'SQLWARNING': tokens.Keyword,
     'STABLE': tokens.Keyword,
     'START': tokens.Keyword.DML,
-    'STATE': tokens.Keyword,
     'STATEMENT': tokens.Keyword,
     'STATIC': tokens.Keyword,
     'STATISTICS': tokens.Keyword,
@@ -508,7 +499,6 @@ KEYWORDS = {
     'SUBCLASS_ORIGIN': tokens.Keyword,
     'SUBLIST': tokens.Keyword,
     'SUBSTRING': tokens.Keyword,
-    'SUM': tokens.Keyword,
     'SYMMETRIC': tokens.Keyword,
     'SYSID': tokens.Keyword,
     'SYSTEM': tokens.Keyword,
@@ -540,7 +530,6 @@ KEYWORDS = {
     'TRIGGER_CATALOG': tokens.Keyword,
     'TRIGGER_NAME': tokens.Keyword,
     'TRIGGER_SCHEMA': tokens.Keyword,
-    'TRIM': tokens.Keyword,
     'TRUE': tokens.Keyword,
     'TRUNCATE': tokens.Keyword,
     'TRUSTED': tokens.Keyword,
@@ -556,7 +545,6 @@ KEYWORDS = {
     'UNNAMED': tokens.Keyword,
     'UNNEST': tokens.Keyword,
     'UNTIL': tokens.Keyword,
-    'UPPER': tokens.Keyword,
     'USAGE': tokens.Keyword,
     'USE': tokens.Keyword,
     'USER': tokens.Keyword,
@@ -623,7 +611,6 @@ KEYWORDS_COMMON = {
     'INSERT': tokens.Keyword.DML,
     'DELETE': tokens.Keyword.DML,
     'UPDATE': tokens.Keyword.DML,
-    'REPLACE': tokens.Keyword.DML,
     'MERGE': tokens.Keyword.DML,
     'DROP': tokens.Keyword.DDL,
     'CREATE': tokens.Keyword.DDL,
@@ -632,13 +619,13 @@ KEYWORDS_COMMON = {
     'WHERE': tokens.Keyword,
     'FROM': tokens.Keyword,
     'INNER': tokens.Keyword,
-    'JOIN': tokens.Keyword,
-    'STRAIGHT_JOIN': tokens.Keyword,
+    'JOIN': tokens.Keyword.Join,
+    'STRAIGHT_JOIN': tokens.Keyword.Join,
     'AND': tokens.Keyword,
     'OR': tokens.Keyword,
-    'LIKE': tokens.Keyword,
+    'LIKE': tokens.Operator.Comparison,
     'ON': tokens.Keyword,
-    'IN': tokens.Keyword,
+    'IN': tokens.Operator.Comparison,
     'SET': tokens.Keyword,
 
     'BY': tokens.Keyword,
@@ -659,7 +646,5 @@ KEYWORDS_COMMON = {
 
     'CASE': tokens.Keyword,
     'WHEN': tokens.Keyword,
-    'MIN': tokens.Keyword,
-    'MAX': tokens.Keyword,
     'DISTINCT': tokens.Keyword,
 }

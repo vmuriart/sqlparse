@@ -405,3 +405,29 @@ def group(stmt):
     ]:
         func(stmt)
     return stmt
+
+
+# group_token = tlist.token_next_match(idx, T.Keyword, 'GROUP')
+# stopwords = ('LIMIT', 'UNION')
+# while group_token:
+#     group_index = tlist.token_index(group_token)
+#
+#     by_token = tlist.token_next_match(group_index, T.Keyword, 'BY')
+#
+#     tlist.tokens.remove(group_token)
+#     tlist.tokens.remove(by_token)
+#
+#     group_by_token = sql.Token(T.Keyword,
+#                                '%s %s' % (group_token.value, by_token.value))
+#
+# tlist.tokens.insert(group_index, group_by_token)
+#
+# end = tlist.token_next_by_instance(group_index + 1, (sql.OrderBy))
+#
+# if not end:
+#     end = tlist.token_next_match(group_index + 1, T.Keyword, stopwords)
+#
+# if end is None:
+#     end = tlist._groupable_tokens[-1]
+# else:
+#     end = tlist.tokens[tlist.token_index(end) - 1]

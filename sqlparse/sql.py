@@ -624,3 +624,11 @@ class CTE_Subquery(TokenList):
 class Join_Clause(TokenList):
     M_OPEN = T.Keyword.Join, None
     M_CLOSE = [(T.Keyword.Join, None), (T.Punctuation, ',')]
+
+class Limit(TokenList):
+    M_OPEN = T.Keyword, 'LIMIT'
+    M_CLOSE = T.Keyword, ('ORDER', 'GROUP', 'UNION', 'WHERE', 'HAVING')
+
+class Having(TokenList):
+    M_OPEN = T.Keyword, 'HAVING'
+    M_CLOSE = T.Keyword, ('ORDER', 'GROUP', 'LIMIT', 'UNION', 'WHERE')

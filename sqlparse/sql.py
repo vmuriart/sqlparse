@@ -37,14 +37,14 @@ class Token(object):
     def __str__(self):
         return self.value
 
-    # Pending tokenlist __len__ bug fix
-    # def __len__(self):
-    #     return len(self.value)
+    def __len__(self):
+        return len(self.value)
 
     def __repr__(self):
         cls = self._get_repr_name()
         value = self._get_repr_value()
         return "<{cls} '{value}' at 0x{id:2X}>".format(id=id(self), **locals())
+
 
     def _get_repr_name(self):
         return str(self.ttype).split('.')[-1]
@@ -146,9 +146,8 @@ class TokenList(Token):
     def __str__(self):
         return ''.join(token.value for token in self.flatten())
 
-    # weird bug
-    # def __len__(self):
-    #     return len(self.tokens)
+    def __len__(self):
+        return len(self.tokens)
 
     def __iter__(self):
         return iter(self.tokens)
@@ -436,7 +435,7 @@ class Identifier(TokenList):
         """Returns an iterator of index token lists"""
 
         for token in self.tokens:
-            if isinstance(token, SquareBrackets):
+            if isinstance(token, (SquareBrackets, Parenthesis)):
                 # Use [1:-1] index to discard the square brackets
                 yield token.tokens[1:-1]
 
@@ -492,6 +491,7 @@ class For(TokenList):
 
 class Comparison(TokenList):
     """A comparison used for example in WHERE clauses."""
+    M = T.Operator.Comparison, None
 
     @property
     def left(self):

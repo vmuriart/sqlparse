@@ -42,6 +42,7 @@ Other = Token.Other
 # Common token types for source code
 Keyword = Token.Keyword
 Name = Token.Name
+Alias = Name.Alias
 Literal = Token.Literal
 String = Literal.String
 Number = Literal.Number

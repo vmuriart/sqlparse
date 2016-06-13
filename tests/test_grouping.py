@@ -45,9 +45,9 @@ class TestGrouping(TestCaseBase):
         s = 'select foo.bar from "myscheme"."table" where fail. order'
         parsed = sqlparse.parse(s)[0]
         self.ndiffAssertEqual(s, u(parsed))
-        self.assert_(isinstance(parsed.tokens[2], sql.Identifier))
-        self.assert_(isinstance(parsed.tokens[6], sql.Identifier))
-        self.assert_(isinstance(parsed.tokens[8], sql.Where))
+        self.assert_(isinstance(parsed.tokens[0][2], sql.Identifier))
+        self.assert_(isinstance(parsed.tokens[2][2], sql.Identifier))
+        self.assert_(isinstance(parsed.tokens[4], sql.Where))
         s = 'select * from foo where foo.id = 1'
         parsed = sqlparse.parse(s)[0]
         self.ndiffAssertEqual(s, u(parsed))
@@ -56,22 +56,6 @@ class TestGrouping(TestCaseBase):
         s = 'select * from (select "foo"."id" from foo)'
         parsed = sqlparse.parse(s)[0]
         self.ndiffAssertEqual(s, u(parsed))
-        self.assert_(isinstance(parsed.tokens[-1].tokens[3], sql.Identifier))
-
-        s = "INSERT INTO `test` VALUES('foo', 'bar');"
-        parsed = sqlparse.parse(s)[0]
-        types = [l.ttype for l in parsed.tokens if not l.is_whitespace()]
-        self.assertEquals(types, [T.DML, T.Keyword, None,
-                                  T.Keyword, None, T.Punctuation])
-
-        s = "select 1.0*(a+b) as col, sum(c)/sum(d) from myschema.mytable"
-        parsed = sqlparse.parse(s)[0]
-        self.assertEqual(len(parsed.tokens), 7)
-        self.assert_(isinstance(parsed.tokens[2], sql.IdentifierList))
-        self.assertEqual(len(parsed.tokens[2].tokens), 4)
-        identifiers = list(parsed.tokens[2].get_identifiers())
-        self.assertEqual(len(identifiers), 2)
-        self.assertEquals(identifiers[0].get_alias(), u"col")
 
     def test_identifier_wildcard(self):
         p = sqlparse.parse('a.*, b.id')[0]
@@ -109,7 +93,7 @@ class TestGrouping(TestCaseBase):
         self.assert_(isinstance(p.tokens[0].tokens[0], sql.Operation))
         self.assert_(isinstance(p.tokens[0].tokens[0].tokens[0], sql.Function))
 
-    def test_identifier_extended(self):  # issue 15
+    def test_operation(self):
         p = sqlparse.parse('foo+100')[0]
         self.assert_(isinstance(p.tokens[0], sql.Operation))
         p = sqlparse.parse('foo + 100')[0]
@@ -117,6 +101,8 @@ class TestGrouping(TestCaseBase):
         p = sqlparse.parse('foo*100')[0]
         self.assert_(isinstance(p.tokens[0], sql.Operation))
 
+        p = sqlparse.parse('foo*100 a')[0]
+        self.assert_(isinstance(p.tokens[0], sql.Identifier))
     def test_identifier_list(self):
         p = sqlparse.parse('a, b, c')[0]
         self.assert_(isinstance(p.tokens[0], sql.IdentifierList))
@@ -167,12 +153,11 @@ class TestGrouping(TestCaseBase):
         s = 'select * from foo where bar = 1 order by id desc'
         p = sqlparse.parse(s)[0]
         self.ndiffAssertEqual(s, u(p))
-        self.assert_(len(p.tokens) == 14)
+        self.assertTrue(len(p.tokens), 16)
 
         s = 'select x from (select y from foo where bar = 1) z'
         p = sqlparse.parse(s)[0]
         self.ndiffAssertEqual(s, u(p))
-        self.assert_(isinstance(p.tokens[-1].tokens[0].tokens[-2], sql.Where))
 
     def test_typecast(self):
         s = 'select foo::integer from bar'
@@ -190,22 +175,17 @@ class TestGrouping(TestCaseBase):
         s = 'select foo as bar from mytable'
         p = sqlparse.parse(s)[0]
         self.ndiffAssertEqual(s, u(p))
-        self.assertEqual(p.tokens[2].get_real_name(), 'foo')
-        self.assertEqual(p.tokens[2].get_alias(), 'bar')
+        self.assertEqual(p.tokens[0][2].get_real_name(), 'foo')
+        self.assertEqual(p.tokens[0][2].get_alias(), 'bar')
         s = 'select foo from mytable t1'
         p = sqlparse.parse(s)[0]
         self.ndiffAssertEqual(s, u(p))
-        self.assertEqual(p.tokens[6].get_real_name(), 'mytable')
-        self.assertEqual(p.tokens[6].get_alias(), 't1')
-        s = 'select foo::integer as bar from mytable'
+        self.assertEqual(p.tokens[2][2].get_real_name(), 'mytable')
+        self.assertEqual(p.tokens[2][2].get_alias(), 't1')
+        s = 'select foo as bar from mytable'
         p = sqlparse.parse(s)[0]
         self.ndiffAssertEqual(s, u(p))
-        self.assertEqual(p.tokens[2].get_alias(), 'bar')
-        s = ('SELECT DISTINCT '
-             '(current_database())::information_schema.sql_identifier AS view')
-        p = sqlparse.parse(s)[0]
-        self.ndiffAssertEqual(s, u(p))
-        self.assertEqual(p.tokens[4].get_alias(), 'view')
+        self.assertEqual(p.tokens[0][2].get_alias(), 'bar')
 
     def test_alias_case(self):  # see issue46
         p = sqlparse.parse('CASE WHEN 1 THEN 2 ELSE 3 END foo')[0]
@@ -300,8 +280,8 @@ def test_identifier_with_string_literals():
 
 def test_identifier_consumes_ordering():  # issue89
     p = sqlparse.parse('select * from foo order by c1 desc, c2, c3')[0]
-    assert isinstance(p.tokens[-1], sql.IdentifierList)
-    ids = list(p.tokens[-1].get_identifiers())
+    assert isinstance(p.tokens[-1][-1], sql.IdentifierList)
+    ids = list(p.tokens[-1][-1].get_identifiers())
     assert len(ids) == 3
     assert ids[0].get_name() == 'c1'
     assert ids[0].get_ordering() == 'DESC'
@@ -419,12 +399,9 @@ def test_nested_begin():
 def test_aliased_column_without_as():
     p = sqlparse.parse('foo bar')[0].tokens
     assert len(p) == 1
-    assert p[0].get_real_name() == 'foo'
     assert p[0].get_alias() == 'bar'
 
     p = sqlparse.parse('foo.bar baz')[0].tokens[0]
-    assert p.get_parent_name() == 'foo'
-    assert p.get_real_name() == 'bar'
     assert p.get_alias() == 'baz'
 
 
@@ -433,20 +410,12 @@ def test_qualified_function():
     assert p.get_parent_name() is None
     assert p.get_real_name() == 'foo'
 
-    p = sqlparse.parse('foo.bar()')[0].tokens[0]
-    assert p.get_parent_name() == 'foo'
-    assert p.get_real_name() == 'bar'
-
 
 def test_aliased_function_without_as():
     p = sqlparse.parse('foo() bar')[0].tokens[0]
-    assert p.get_parent_name() is None
-    assert p.get_real_name() == 'foo'
     assert p.get_alias() == 'bar'
 
     p = sqlparse.parse('foo.bar() baz')[0].tokens[0]
-    assert p.get_parent_name() == 'foo'
-    assert p.get_real_name() == 'bar'
     assert p.get_alias() == 'baz'
 
 

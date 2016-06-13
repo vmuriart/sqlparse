@@ -26,59 +26,65 @@ SQL_REGEX = {
         (r'(\r\n|\r|\n)', tokens.Newline),
         (r'\s+', tokens.Whitespace),
 
-        (r':=', tokens.Assignment),
-        (r'::', tokens.Punctuation),
-
-        (r'\*', tokens.Wildcard),
-
-        (r"`(``|[^`])*`", tokens.Name),
-        (r"´(´´|[^´])*´", tokens.Name),
-        (r'\$([_A-Z]\w*)?\$', tokens.Name.Builtin),
-
-        (r'\?', tokens.Name.Placeholder),
-        (r'%(\(\w+\))?s', tokens.Name.Placeholder),
-        (r'[$:?]\w+', tokens.Name.Placeholder),
-
-        # FIXME(andi): VALUES shouldn't be listed here
-        # see https://github.com/andialbrecht/sqlparse/pull/64
-        # IN is special, it may be followed by a parenthesis, but
-        # is never a functino, see issue183
-        (r'(CASE|IN|VALUES|USING)\b', tokens.Keyword),
-
-        (r'(@|##|#)[A-Z]\w+', tokens.Name),
-
-        # see issue #39
-        # Spaces around period `schema . name` are valid identifier
-        # TODO: Spaces before period not implemented
-        (r'[A-Z]\w*(?=\s*\.)', tokens.Name),  # 'Name'   .
-        (r'(?<=\.)[A-Z]\w*', tokens.Name),  # .'Name'
-        (r'[A-Z]\w*(?=\()', tokens.Name),  # side effect: change kw to func
-
+        # As long as up here, below doesn't need to exclude \d from beginning
         # TODO: `1.` and `.1` are valid numbers
         (r'-?0x[\dA-F]+', tokens.Number.Hexadecimal),
         (r'-?\d*(\.\d+)?E-?\d+', tokens.Number.Float),
         (r'-?\d*\.\d+', tokens.Number.Float),
         (r'-?\d+', tokens.Number.Integer),
 
-        (r"'(''|\\\\|\\'|[^'])*'", tokens.String.Single),
-        # not a real string literal in ANSI SQL:
-        (r'(""|".*?[^\\]")', tokens.String.Symbol),
-        # sqlite names can be escaped with [square brackets]. left bracket
-        # cannot be preceded by word character or a right bracket --
-        # otherwise it's probably an array index
-        (r'(?<![\w\])])(\[[^\]]+\])', tokens.Name),
+        # handles schema.name to identify either `schema` or `name`
+        # breaks previous behavior of anything followed by ( is a function
+        # need to either double whitelist keywords, or add a whitelist of functions
+        # TODO: Allow spaces around period `schema   .   name` is valid and neither is KW
+        # backwards space not implemented
+        (r'(\w+)(?=\s*\.)', tokens.Name),
+        (r'(?<=\.)\w+', tokens.Name),
+
+        # add whitelisting Keywords and rest be func.
+        # leaving here until decide which should be whitelisted
+        (r'(CASE|IN|VALUES|USING)\b', tokens.Keyword),
+        (r'\w+(?=\()', tokens.Name),
+
+        # handle multi worded keywords, built-ins
+        (r'NOT\s+NULL\b', tokens.Keyword),
+        (r'DOUBLE\s+PRECISION\b', tokens.Name.Builtin),
+        (r'CREATE(\s+OR\s+REPLACE)?\b', tokens.Keyword.DDL),
+        (r'END(\s+IF|\s+LOOP|\s+WHILE)?\b', tokens.Keyword),
         (r'((LEFT\s+|RIGHT\s+|FULL\s+)?(INNER\s+|OUTER\s+|STRAIGHT\s+)?'
          r'|(CROSS\s+|NATURAL\s+)?)?JOIN\b', tokens.Keyword),
-        (r'END(\s+IF|\s+LOOP|\s+WHILE)?\b', tokens.Keyword),
-        (r'NOT\s+NULL\b', tokens.Keyword),
-        (r'CREATE(\s+OR\s+REPLACE)?\b', tokens.Keyword.DDL),
-        (r'DOUBLE\s+PRECISION\b', tokens.Name.Builtin),
 
-        (r'[_A-Z]\w*', is_keyword),
+        # handles single word keywords
+        (r'\w+', is_keyword),
 
-        (r'[;:()\[\],\.]', tokens.Punctuation),
-        (r'[<>=~!]+', tokens.Operator.Comparison),
+        # handle expressions that start with symbols
+        (r'(@|##|#)\w+', tokens.Name),
+        (r"`(``|[^`])*`", tokens.Name),
+        (r"´(´´|[^´])*´", tokens.Name),
+
+        # names can be escaped with [square brackets].
+        # left bracket cannot be preceded by word or right bracket --
+        # otherwise it's probably an array index
+        (r'(?<![\w\])])(\[[^\]]+\])', tokens.Name),
+
+        (r'\?', tokens.Name.Placeholder),
+        (r'[$:?]\w+', tokens.Name.Placeholder),
+        (r'%(\(\w+\))?s', tokens.Name.Placeholder),
+
+        # TODO: has no test, it may never even be used... name placeholder preceeds it
+        (r'\$\w*\$', tokens.Name.Builtin),
+
+        (r'\*', tokens.Wildcard),
+        (r':=', tokens.Assignment),
+        (r'::', tokens.Punctuation),
+
         (r'[+/@#%^&|`?^-]+', tokens.Operator),
+        (r'[;:(),\[\]\.]', tokens.Punctuation),
+        (r'[<>=~!]+', tokens.Operator.Comparison),
+
+        # not a real string literal in ANSI SQL:
+        (r'(""|".*?[^\\]")', tokens.String.Symbol),
+        (r"'(''|\\\\|\\'|[^'])*'", tokens.String.Single),
     ]}
 
 FLAGS = re.IGNORECASE | re.UNICODE

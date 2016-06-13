@@ -111,13 +111,7 @@ class ReindentFilter(object):
         num_offset = 1 if self.char == '\t' else self._get_offset(first)
         if not tlist.within(sql.Function):
             with offset(self, num_offset):
-                position = 0
-                for token in identifiers:
-                    # Add 1 for the "," separator
-                    position += len(token.value) + 1
-                    if position > (self.wrap_after - self.offset):
-                        tlist.insert_before(token, self.nl())
-                        position = 0
+                [tlist.insert_before(token, self.nl()) for token in identifiers]
         self._process_default(tlist)
 
     def _process_case(self, tlist):
@@ -153,3 +147,30 @@ class ReindentFilter(object):
 
         self._last_stmt = stmt
         return stmt
+
+
+    def _process_subquery(self, tlist):
+        # token = tlist[0]
+        # tlist.insert_before(token, self.nl())
+
+        token = tlist.token_next_by(i=sql.Select)
+        with indent(self):
+            tlist.insert_before(token, self.nl())
+            self._process_default(tlist)
+            tlist.insert_before(tlist[-1], self.nl())
+
+
+    def _process_cte(self, tlist):
+        token = tlist.token_next_by(i=sql.CTE_Subquery)
+        with indent(self):
+            while token:
+                tlist.insert_before(token, self.nl())
+                token = tlist.token_next_by(i=sql.CTE_Subquery, idx=token)
+
+            token = tlist.token_next_by(m=(T.Punctuation, ','))
+            while token:
+                tlist.insert_after(token, self.nl())
+                token = tlist.token_next_by(m=(T.Punctuation, ','), idx=token)
+
+            self._process_default(tlist)
+        tlist.insert_after(tlist[-1], self.nl())

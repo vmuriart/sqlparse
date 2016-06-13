@@ -275,27 +275,32 @@ def align_comments(tlist):
 def group(stmt):
     for func in [
         group_comments,
-        group_brackets,
         group_parenthesis,
-        group_functions,
-        group_where,
+        group_brackets,
+        group_if,
+        group_for,
+        group_begin,
         group_case,
+
+        group_where,
+        group_functions,
+
         group_period,
         group_arrays,
         group_identifier,
+
         group_operator,
-        group_order,
+        group_comparison,
+
+        group_assignment,
         group_typecasts,
+
+        group_order,
+
         group_as,
         group_aliased,
-        group_assignment,
-        group_comparison,
-        align_comments,
+
         group_identifier_list,
-        group_if,
-        group_for,
-        group_foreach,
-        group_begin,
     ]:
         func(stmt)
     return stmt

@@ -170,14 +170,21 @@ def group_comparison(tlist):
            valid_prev, valid_next, post, extend=False)
 
 
-@recurse(sql.Identifier)
 def group_identifier(tlist):
-    ttypes = (T.String.Symbol, T.Name)
+    ttypes = T.String.Symbol, T.Name
 
-    tidx, token = tlist.token_next_by(t=ttypes)
-    while token:
-        tlist.group_tokens(sql.Identifier, tidx, tidx)
-        tidx, token = tlist.token_next_by(t=ttypes, idx=tidx)
+    def match(token):
+        return imt(token, t=ttypes)
+
+    def valid(token):
+        return True
+
+    def post(tlist, pidx, tidx, nidx):
+        return tidx, tidx
+
+    valid_prev = valid_next = valid
+    _group(tlist, sql.Identifier, match,
+           valid_prev, valid_next, post, extend=False)
 
 
 def group_arrays(tlist):

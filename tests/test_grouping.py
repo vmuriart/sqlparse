@@ -23,7 +23,7 @@ def test_grouping_comments():
     s = '/*\n * foo\n */   \n  bar'
     parsed = sqlparse.parse(s)[0]
     assert str(parsed) == s
-    assert len(parsed.tokens) == 2
+    assert len(parsed.tokens) == 3
 
 
 @pytest.mark.parametrize('s', ['foo := 1;', 'foo := 1'])
@@ -160,7 +160,7 @@ def test_grouping_identifier_list_with_inline_comments():
     p = sqlparse.parse('foo /* a comment */, bar')[0]
     assert isinstance(p.tokens[0], sql.IdentifierList)
     assert isinstance(p.tokens[0].tokens[0], sql.Identifier)
-    assert isinstance(p.tokens[0].tokens[3], sql.Identifier)
+    assert isinstance(p.tokens[0].tokens[5], sql.Identifier)
 
 
 def test_grouping_identifiers_with_operators():

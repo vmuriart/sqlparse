@@ -233,7 +233,7 @@ def group_identifier_list(tlist):
     sqlcls = (sql.Function, sql.Case, sql.Identifier, sql.Comparison,
               sql.IdentifierList, sql.Operation)
     ttypes = (T_NUMERICAL + T_STRING + T_NAME +
-              (T.Keyword, T.Comment, T.Wildcard))
+              (T.Keyword, T.Comment, T.Wildcard, T.Comment.Multiline))
 
     def match(token):
         return token.match(T.Punctuation, ',')
@@ -246,20 +246,7 @@ def group_identifier_list(tlist):
 
     valid_prev = valid_next = valid
     _group(tlist, sql.IdentifierList, match,
-           valid_prev, valid_next, post, extend=True)
-
-
-@recurse(sql.Comment)
-def group_comments(tlist):
-    tidx, token = tlist.token_next_by(t=T.Comment)
-    while token:
-        eidx, end = tlist.token_not_matching(
-            lambda tk: imt(tk, t=T.Comment) or tk.is_whitespace(), idx=tidx)
-        if end is not None:
-            eidx, end = tlist.token_prev(eidx, skip_ws=False)
-            tlist.group_tokens(sql.Comment, tidx, eidx)
-
-        tidx, token = tlist.token_next_by(t=T.Comment, idx=tidx)
+           valid_prev, valid_next, post, extend=True, skip_cm=True)
 
 
 @recurse(sql.Where)
@@ -346,20 +333,8 @@ def group_order(tlist):
            valid_prev, valid_next, post, extend=False, recurse=False)
 
 
-@recurse()
-def align_comments(tlist):
-    tidx, token = tlist.token_next_by(i=sql.Comment)
-    while token:
-        pidx, prev_ = tlist.token_prev(tidx)
-        if isinstance(prev_, sql.TokenList):
-            tlist.group_tokens(sql.TokenList, pidx, tidx, extend=True)
-            tidx = pidx
-        tidx, token = tlist.token_next_by(i=sql.Comment, idx=tidx)
-
-
 def group(stmt):
     for func in [
-        group_comments,
 
         # _group_matching
         group_brackets,
@@ -382,7 +357,6 @@ def group(stmt):
         group_assignment,
         group_comparison,
 
-        align_comments,
         group_identifier_list,
     ]:
         func(stmt)
@@ -394,7 +368,8 @@ def _group(tlist, cls, match,
            valid_next=lambda t: True,
            post=None,
            extend=True,
-           recurse=True
+           recurse=True,
+           skip_cm=False,
            ):
     """Groups together tokens that are joined by a middle token. ie. x < y"""
 
@@ -406,11 +381,14 @@ def _group(tlist, cls, match,
         if token.is_whitespace():
             continue
 
+        if skip_cm and token.ttype in T.Comment:
+            continue
+
         if recurse and token.is_group() and not isinstance(token, cls):
             _group(token, cls, match, valid_prev, valid_next, post, extend)
 
         if match(token):
-            nidx, next_ = tlist.token_next(tidx)
+            nidx, next_ = tlist.token_next(tidx, skip_cm=skip_cm)
             if valid_prev(prev_) and valid_next(next_):
                 from_idx, to_idx = post(tlist, pidx, tidx, nidx)
                 grp = tlist.group_tokens(cls, from_idx, to_idx, extend=extend)

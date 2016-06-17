@@ -237,7 +237,7 @@ class TokenList(Token):
         """
         # this on is inconsistent, using Comment instead of T.Comment...
         funcs = lambda tk: not ((skip_ws and tk.is_whitespace()) or
-                                (skip_cm and imt(tk, t=T.Comment, i=Comment)))
+                                (skip_cm and imt(tk, t=T.Comment)))
         return self._token_matching(funcs)[1]
 
     def token_next_by(self, i=None, m=None, t=None, idx=-1, end=None):
@@ -257,25 +257,27 @@ class TokenList(Token):
         """Returns the previous token relative to *idx*.
 
         If *skip_ws* is ``True`` (the default) whitespace tokens are ignored.
-        If *skip_cm* is ``True`` comments are ignored.
         ``None`` is returned if there's no previous token.
         """
-        return self.token_next(idx, skip_ws, skip_cm, _reverse=True)
+        if idx is None:
+            return None, None
+        idx += 1  # alot of code usage current pre-compensates for this
+        funcs = lambda tk: not ((skip_ws and tk.is_whitespace()) or
+                                (skip_cm and imt(tk, t=T.Comment)))
+        return self._token_matching(funcs, idx, reverse=True)
 
-    # TODO: May need to re-add default value to idx
-    def token_next(self, idx, skip_ws=True, skip_cm=False, _reverse=False):
+    def token_next(self, idx, skip_ws=True, skip_cm=False):
         """Returns the next token relative to *idx*.
 
         If *skip_ws* is ``True`` (the default) whitespace tokens are ignored.
-        If *skip_cm* is ``True`` comments are ignored.
         ``None`` is returned if there's no next token.
         """
         if idx is None:
             return None, None
         idx += 1  # alot of code usage current pre-compensates for this
         funcs = lambda tk: not ((skip_ws and tk.is_whitespace()) or
-                                (skip_cm and imt(tk, t=T.Comment, i=Comment)))
-        return self._token_matching(funcs, idx, reverse=_reverse)
+                                (skip_cm and imt(tk, t=T.Comment)))
+        return self._token_matching(funcs, idx)
 
     def token_index(self, token, start=0):
         """Return list index of token."""
@@ -516,13 +518,6 @@ class Comparison(TokenList):
     @property
     def right(self):
         return self.tokens[-1]
-
-
-class Comment(TokenList):
-    """A comment."""
-
-    def is_multiline(self):
-        return self.tokens and self.tokens[0].ttype == T.Comment.Multiline
 
 
 class Where(TokenList):

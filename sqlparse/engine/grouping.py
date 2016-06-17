@@ -313,13 +313,21 @@ def group_functions(tlist):
 
 def group_order(tlist):
     """Group together Identifier and Asc/Desc token"""
-    tidx, token = tlist.token_next_by(t=T.Keyword.Order)
-    while token:
-        pidx, prev_ = tlist.token_prev(tidx)
-        if imt(prev_, i=sql.Identifier, t=T.Number):
-            tlist.group_tokens(sql.Identifier, pidx, tidx)
-            tidx = pidx
-        tidx, token = tlist.token_next_by(t=T.Keyword.Order, idx=tidx)
+
+    def match(token):
+        return token.ttype == T.Keyword.Order
+
+    def valid_prev(token):
+        return imt(token, i=sql.Identifier, t=T.Number)
+
+    def valid_next(token):
+        return True
+
+    def post(tlist, pidx, tidx, nidx):
+        return pidx, tidx
+
+    _group(tlist, sql.Identifier, match,
+           valid_prev, valid_next, post, extend=False, recurse=False)
 
 
 @recurse()

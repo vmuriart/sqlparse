@@ -10,26 +10,44 @@ from sqlparse.utils import split_unquoted_newlines
 
 
 class StripCommentsFilter(object):
+    # Should this filter be handling all this whitespace changes?
+    # Should single line comments be replaced by newline tokens?
+    # Should comment.hints be removed as well or left intack?
+    #
+    # It would be better if comments are stripped while they are tokens
+    # to reduce the amount of tokens being processed during grouping.
+
     @staticmethod
     def _process(tlist):
-        def get_next_comment():
-            # TODO(andi) Comment types should be unified, see related issue38
-            return tlist.token_next_by(i=sql.Comment, t=T.Comment)
+        consume_ws = False
+        tidx_offset = 0
+        pidx, prev_ = None, None
 
-        tidx, token = get_next_comment()
-        while token:
-            pidx, prev_ = tlist.token_prev(tidx, skip_ws=False)
-            nidx, next_ = tlist.token_next(tidx, skip_ws=False)
-            # Replace by whitespace if prev and next exist and if they're not
-            # whitespaces. This doesn't apply if prev or next is a paranthesis.
-            if (prev_ is None or next_ is None or
-                    prev_.is_whitespace() or prev_.match(T.Punctuation, '(') or
-                    next_.is_whitespace() or next_.match(T.Punctuation, ')')):
-                tlist.tokens.remove(token)
+        for idx, token in enumerate(list(tlist)):
+            tidx = idx - tidx_offset
+
+            if consume_ws and token.is_whitespace():
+                del tlist.tokens[tidx]
+                tidx_offset += 1
+                continue
             else:
-                tlist.tokens[tidx] = sql.Token(T.Whitespace, ' ')
+                consume_ws = False
 
-            tidx, token = get_next_comment()
+            if token.ttype in T.Comment:
+                consume_ws = True
+                nidx, next_ = tlist.token_next(tidx, skip_ws=False)
+                if (prev_ is None or next_ is None or
+                        prev_.is_whitespace() or
+                        next_.is_whitespace() or
+                        prev_.match(T.Punctuation, '(') or
+                        next_.match(T.Punctuation, ')')):
+                    del tlist.tokens[tidx]
+                    tidx_offset += 1
+                    continue
+                else:
+                    tlist.tokens[tidx] = sql.Token(T.Whitespace, ' ')
+
+            pidx, prev_ = tidx, token
 
     def process(self, stmt):
         [self.process(sgroup) for sgroup in stmt.get_sublists()]

@@ -303,12 +303,12 @@ def group_functions(tlist):
     if has_create and has_table:
         return
 
-    tidx, token = tlist.token_next_by(t=T.Name)
+    tidx, token = tlist.token_next_by(i=sql.Parenthesis)
     while token:
-        nidx, next_ = tlist.token_next(tidx)
-        if isinstance(next_, sql.Parenthesis):
-            tlist.group_tokens(sql.Function, tidx, nidx)
-        tidx, token = tlist.token_next_by(t=T.Name, idx=tidx)
+        pidx, prev_ = tlist.token_prev(tidx)
+        if imt(prev_, t=T.Name):
+            tlist.group_tokens(sql.Function, pidx, tidx)
+        tidx, token = tlist.token_next_by(i=sql.Parenthesis, idx=tidx)
 
 
 def group_order(tlist):

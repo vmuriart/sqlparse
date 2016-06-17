@@ -28,6 +28,10 @@ class _TokenType(tuple):
         # self can be False only if its the `root` ie. Token itself
         return 'Token' + ('.' if self else '') + '.'.join(self)
 
+    def __call__(self, *args, **kwargs):
+        # FIXME: couldn't import otherwise
+        Token = __import__("sqlparse.sql.Token")
+        return Token(self, *args, **kwargs)
 
 Token = _TokenType()
 

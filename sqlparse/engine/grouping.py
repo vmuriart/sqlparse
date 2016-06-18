@@ -346,6 +346,12 @@ def group(stmt):
 
         group_identifier_list,
     ]:
+        import sys
+        import datetime as dt
+        sys.stderr.write(str(dt.datetime.now()))
+
+        sys.stderr.write(" Running {}\n".format(func.__name__))
+        sys.stderr.flush()
         func(stmt)
     return stmt
 

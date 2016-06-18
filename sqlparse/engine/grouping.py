@@ -299,7 +299,6 @@ def group_aliased(tlist):
            valid_prev, valid_next, post, extend=True)
 
 
-@recurse(sql.Function)
 def group_functions(tlist):
     has_create = False
     has_table = False
@@ -311,12 +310,20 @@ def group_functions(tlist):
     if has_create and has_table:
         return
 
-    tidx, token = tlist.token_next_by(i=sql.Parenthesis)
-    while token:
-        pidx, prev_ = tlist.token_prev(tidx)
-        if imt(prev_, t=T.Name):
-            tlist.group_tokens(sql.Function, pidx, tidx)
-        tidx, token = tlist.token_next_by(i=sql.Parenthesis, idx=tidx)
+    def match(token):
+        return isinstance(token, sql.Parenthesis)
+
+    def valid_prev(token):
+        return imt(token, t=T.Name)
+
+    def valid_next(token):
+        return True
+
+    def post(tlist, pidx, tidx, nidx):
+        return pidx, tidx
+
+    _group(tlist, sql.Function, match,
+           valid_prev, valid_next, post, extend=False)
 
 
 def group_order(tlist):

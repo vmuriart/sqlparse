@@ -58,3 +58,31 @@ class TruncateStringFilter(object):
             if len(inner) > self.width:
                 value = ''.join((quote, inner[:self.width], self.char, quote))
             yield ttype, value
+
+
+class StripCommentsFilter(object):
+    @staticmethod
+    def process(stream):
+        # Should this filter be handling all this whitespace changes?
+        # Should single line comments be replaced by newline tokens?
+        # Should comment.hints be removed as well or left intack?
+        consume_ws = False
+        prev_ttype, prev_value = None, None
+
+        for ttype, value in stream:
+            if consume_ws:
+                if ttype in T.Whitespace:
+                    continue
+                else:
+                    consume_ws = False
+                    if (prev_ttype and prev_ttype not in T.Whitespace and
+                            prev_value != '(' and value != ')'):
+                        prev_ttype, prev_value = T.Whitespace, ' '
+                        yield prev_ttype, prev_value
+
+            if ttype in T.Comment:
+                consume_ws = True
+                continue
+
+            prev_ttype, prev_value = ttype, value
+            yield ttype, value

@@ -6,7 +6,6 @@
 # the BSD License: http://www.opensource.org/licenses/bsd-license.php
 
 from sqlparse.filters.others import SerializerUnicode
-from sqlparse.filters.others import StripCommentsFilter
 from sqlparse.filters.others import StripWhitespaceFilter
 from sqlparse.filters.others import SpacesAroundOperatorsFilter
 
@@ -14,6 +13,7 @@ from sqlparse.filters.output import OutputPHPFilter
 from sqlparse.filters.output import OutputPythonFilter
 
 from sqlparse.filters.tokens import KeywordCaseFilter
+from sqlparse.filters.tokens import StripCommentsFilter
 from sqlparse.filters.tokens import IdentifierCaseFilter
 from sqlparse.filters.tokens import TruncateStringFilter
 

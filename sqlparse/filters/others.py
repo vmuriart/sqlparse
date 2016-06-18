@@ -9,52 +9,6 @@ from sqlparse import sql, tokens as T
 from sqlparse.utils import split_unquoted_newlines
 
 
-class StripCommentsFilter(object):
-    # Should this filter be handling all this whitespace changes?
-    # Should single line comments be replaced by newline tokens?
-    # Should comment.hints be removed as well or left intack?
-    #
-    # It would be better if comments are stripped while they are tokens
-    # to reduce the amount of tokens being processed during grouping.
-
-    @staticmethod
-    def _process(tlist):
-        consume_ws = False
-        tidx_offset = 0
-        pidx, prev_ = None, None
-
-        for idx, token in enumerate(list(tlist)):
-            tidx = idx - tidx_offset
-
-            if consume_ws and token.is_whitespace():
-                del tlist.tokens[tidx]
-                tidx_offset += 1
-                continue
-            else:
-                consume_ws = False
-
-            if token.ttype in T.Comment:
-                consume_ws = True
-                nidx, next_ = tlist.token_next(tidx, skip_ws=False)
-                if (prev_ is None or next_ is None or
-                        prev_.is_whitespace() or
-                        next_.is_whitespace() or
-                        prev_.match(T.Punctuation, '(') or
-                        next_.match(T.Punctuation, ')')):
-                    del tlist.tokens[tidx]
-                    tidx_offset += 1
-                    continue
-                else:
-                    tlist.tokens[tidx] = sql.Token(T.Whitespace, ' ')
-
-            pidx, prev_ = tidx, token
-
-    def process(self, stmt):
-        [self.process(sgroup) for sgroup in stmt.get_sublists()]
-        StripCommentsFilter._process(stmt)
-        return stmt
-
-
 class StripWhitespaceFilter(object):
     def _stripws(self, tlist):
         func_name = '_stripws_{cls}'.format(cls=type(tlist).__name__)

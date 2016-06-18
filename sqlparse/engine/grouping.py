@@ -177,15 +177,11 @@ def group_identifier(tlist):
     def match(token):
         return imt(token, t=ttypes)
 
-    def valid(token):
-        return True
-
     def post(tlist, pidx, tidx, nidx):
         return tidx, tidx
 
-    valid_prev = valid_next = valid
     _group(tlist, sql.Identifier, match,
-           valid_prev, valid_next, post, extend=False)
+           post=post, extend=False)
 
 
 def group_arrays(tlist):
@@ -198,14 +194,11 @@ def group_arrays(tlist):
     def valid_prev(token):
         return imt(token, i=sqlcls, t=ttypes)
 
-    def valid_next(token):
-        return True
-
     def post(tlist, pidx, tidx, nidx):
         return pidx, tidx
 
     _group(tlist, sql.Identifier, match,
-           valid_prev, valid_next, post, extend=True, recurse=False)
+           valid_prev, post=post, extend=True, recurse=False)
 
 
 def group_operator(tlist):
@@ -264,14 +257,11 @@ def group_aliased(tlist):
     def valid_prev(token):
         return imt(token, i=sqlcls, t=ttypes)
 
-    def valid_next(token):
-        return True
-
     def post(tlist, pidx, tidx, nidx):
         return pidx, tidx
 
     _group(tlist, sql.Identifier, match,
-           valid_prev, valid_next, post, extend=True)
+           valid_prev, post=post, extend=True)
 
 
 def group_functions(tlist):
@@ -291,14 +281,11 @@ def group_functions(tlist):
     def valid_prev(token):
         return imt(token, t=T.Name)
 
-    def valid_next(token):
-        return True
-
     def post(tlist, pidx, tidx, nidx):
         return pidx, tidx
 
     _group(tlist, sql.Function, match,
-           valid_prev, valid_next, post, extend=False)
+           valid_prev, post=post, extend=False)
 
 
 def group_order(tlist):
@@ -310,14 +297,11 @@ def group_order(tlist):
     def valid_prev(token):
         return imt(token, i=sql.Identifier, t=T.Number)
 
-    def valid_next(token):
-        return True
-
     def post(tlist, pidx, tidx, nidx):
         return pidx, tidx
 
     _group(tlist, sql.Identifier, match,
-           valid_prev, valid_next, post, extend=False, recurse=False)
+           valid_prev, post=post, extend=False, recurse=False)
 
 
 def group(stmt):
@@ -358,7 +342,7 @@ def group(stmt):
 
 def _group(tlist, cls, match,
            valid_prev=lambda t: True,
-           valid_next=lambda t: True,
+           valid_next=None,
            post=None,
            extend=True,
            recurse=True,
@@ -381,8 +365,14 @@ def _group(tlist, cls, match,
             _group(token, cls, match, valid_prev, valid_next, post, extend)
 
         if match(token):
-            nidx, next_ = tlist.token_next(tidx, skip_cm=skip_cm)
-            if valid_prev(prev_) and valid_next(next_):
+            if valid_next is None:
+                nidx = None
+                valid = valid_prev(prev_)
+            else:
+                nidx, next_ = tlist.token_next(tidx, skip_cm=skip_cm)
+                valid = valid_prev(prev_) and valid_next(next_)
+
+            if valid:
                 from_idx, to_idx = post(tlist, pidx, tidx, nidx)
                 grp = tlist.group_tokens(cls, from_idx, to_idx, extend=extend)
 

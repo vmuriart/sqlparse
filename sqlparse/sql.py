@@ -376,7 +376,7 @@ class TokenList(Token):
 
         tokens = self.tokens[idx:] if idx else self.tokens
         tokens = reversed(tokens) if reverse else tokens
-        types = [T.Name, T.Wildcard, T.String.Symbol]
+        types = [T.Name, T.Wildcard, T.String.Symbol, T.Alias]
 
         if keywords:
             types.append(T.Keyword)

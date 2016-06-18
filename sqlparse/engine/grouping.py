@@ -124,6 +124,7 @@ def group_as(tlist):
         return not imt(token, t=ttypes)
 
     def post(tlist, pidx, tidx, nidx):
+        tlist[nidx].ttype = T.Alias
         return pidx, nidx
 
     _group(tlist, sql.Identifier, match, valid_prev, valid_next, post)

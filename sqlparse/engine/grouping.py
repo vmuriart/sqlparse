@@ -7,7 +7,7 @@
 
 from sqlparse import sql
 from sqlparse import tokens as T
-from sqlparse.utils import recurse, imt
+from sqlparse.utils import imt
 
 T_NUMERICAL = (T.Number, T.Number.Integer, T.Number.Float)
 T_STRING = (T.String, T.String.Single, T.String.Symbol)

@@ -61,24 +61,6 @@ def remove_quotes(val):
     return val
 
 
-def recurse(*cls):
-    """Function decorator to help with recursion
-
-    :param cls: Classes to not recurse over
-    :return: function
-    """
-    def wrap(f):
-        def wrapped_f(tlist):
-            for sgroup in tlist.get_sublists():
-                if not isinstance(sgroup, cls):
-                    wrapped_f(sgroup)
-            f(tlist)
-
-        return wrapped_f
-
-    return wrap
-
-
 def imt(token, i=None, m=None, t=None):
     """Helper function to simplify comparisons Instance, Match and TokenType
     :param token:

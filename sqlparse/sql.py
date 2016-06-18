@@ -245,11 +245,6 @@ class TokenList(Token):
         idx += 1
         return self._token_matching(funcs, idx, end)
 
-    def token_not_matching(self, funcs, idx):
-        funcs = (funcs,) if not isinstance(funcs, (list, tuple)) else funcs
-        funcs = [lambda tk: not func(tk) for func in funcs]
-        return self._token_matching(funcs, idx)
-
     def token_matching(self, funcs, idx):
         return self._token_matching(funcs, idx)[1]
 

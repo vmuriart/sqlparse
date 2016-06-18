@@ -480,6 +480,9 @@ class Parenthesis(TokenList):
     def _groupable_tokens(self):
         return self.tokens[1:-1]
 
+    def is_subquery(self):
+        return self.token_next_by(i=Select) is not None
+
 
 class SquareBrackets(TokenList):
     """Tokens between square brackets"""
@@ -517,13 +520,6 @@ class Comparison(TokenList):
     @property
     def right(self):
         return self.tokens[-1]
-
-
-class Where(TokenList):
-    """A WHERE clause."""
-    M_OPEN = T.Keyword, 'WHERE'
-    M_CLOSE = T.Keyword, ('ORDER', 'GROUP', 'LIMIT', 'UNION', 'EXCEPT',
-                          'HAVING', 'RETURNING')
 
 
 class Case(TokenList):
@@ -601,3 +597,85 @@ class Begin(TokenList):
 
 class Operation(TokenList):
     """Grouping of operations"""
+
+
+class CTE(TokenList):
+    M_OPEN = T.CTE, 'WITH'
+    M_CLOSE = T.Keyword.DML, 'SELECT'
+
+
+class CTE_Subquery(TokenList):
+    M_OPEN = T.Keyword.Join, None
+    M_CLOSE = [(T.Keyword.Join, None), (T.Punctuation, ',')]
+
+
+class Select(TokenList):
+    M_OPEN = T.Keyword.DML, 'SELECT'
+    M_CLOSE = T.Keyword, 'FROM'
+
+
+class From(TokenList):
+    M_OPEN = T.Keyword, 'FROM'
+    M_CLOSE = T.Keyword, ('UNION', 'EXCEPT', 'MINUS', 'INTERSECT', 'LIMIT',
+                          'ORDER', 'HAVING', 'GROUP', 'CONNECT', 'WHERE')
+
+
+class Where(TokenList):
+    """A WHERE clause."""
+    M_OPEN = T.Keyword, 'WHERE'
+    M_CLOSE = T.Keyword, ('UNION', 'EXCEPT', 'MINUS', 'INTERSECT', 'LIMIT',
+                          'ORDER', 'HAVING', 'GROUP', 'CONNECT', 'RETURNING')
+
+
+class Connect(TokenList):
+    M_OPEN = T.Keyword, 'CONNECT'
+    M_CLOSE = T.Keyword, ('UNION', 'EXCEPT', 'MINUS', 'INTERSECT', 'LIMIT',
+                          'ORDER', 'HAVING', 'GROUP')
+
+
+class Group(TokenList):
+    M_OPEN = T.Keyword, 'GROUP'
+    M_CLOSE = T.Keyword, ('UNION', 'EXCEPT', 'MINUS', 'INTERSECT', 'LIMIT',
+                          'ORDER', 'HAVING')
+
+
+class Having(TokenList):
+    M_OPEN = T.Keyword, 'HAVING'
+    M_CLOSE = T.Keyword, ('UNION', 'EXCEPT', 'MINUS', 'INTERSECT', 'LIMIT',
+                          'ORDER')
+
+
+class Order(TokenList):
+    M_OPEN = T.Keyword, 'ORDER'
+    M_CLOSE = T.Keyword, ('UNION', 'EXCEPT', 'MINUS', 'INTERSECT', 'LIMIT')
+
+
+# Note, this has different behavior in T-Sql, MySql, Oracle
+# class Limit(TokenList):
+#     M_OPEN = T.Keyword, 'LIMIT'
+#     M_CLOSE = T.Keyword, ('ORDER', 'GROUP', 'UNION', 'WHERE', 'HAVING')
+
+
+class ComparisonList(TokenList):
+    M_SEPARATOR = T.Keyword, ('AND', 'OR')
+
+    def get_comparisons(self):
+        for token in self.tokens:
+            if not (token.is_whitespace() or imt(token, m=self.M_SEPARATOR)):
+                yield token
+
+
+class Join_Clause(TokenList):
+    M_OPEN = T.Keyword.Join, None
+    M_CLOSE = [(T.Keyword.Join, None), (T.Punctuation, ',')]
+
+
+class Subquery(TokenList):
+    @property
+    def _groupable_tokens(self):
+        return self.tokens[1:-1]
+
+
+class Table_Group(TokenList):
+    M_OPEN = T.Name, None
+    M_CLOSE = T.Punctuation, ','

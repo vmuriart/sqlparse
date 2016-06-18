@@ -414,3 +414,23 @@ def group_clauses(tlist, cls, clause=None, i=None):
         end = tlist._groupable_tokens[-1]
         eidx = tlist.token_index(end)
         tlist.group_tokens(cls, start_idx, eidx)
+
+
+def group_select(tlist):
+    group_clauses(tlist, sql.Select)
+
+
+def group_from(tlist):
+    group_clauses(tlist, sql.From)
+
+
+def group_group_by(tlist):
+    group_clauses(tlist, sql.Group)
+
+
+def group_order_by(tlist):
+    group_clauses(tlist, sql.Order)
+
+
+def group_table_stmt(tlist):
+    group_clauses(tlist, sql.Table_Group, sql.From, i=sql.Identifier)

@@ -278,17 +278,25 @@ def group_where(tlist):
         tidx, token = tlist.token_next_by(m=sql.Where.M_OPEN, idx=tidx)
 
 
-@recurse()
 def group_aliased(tlist):
-    I_ALIAS = (sql.Parenthesis, sql.Function, sql.Case, sql.Identifier,
-               sql.Operation)
+    sqlcls = (sql.Parenthesis, sql.Function, sql.Case, sql.Identifier,
+              sql.Operation)
+    ttypes = T.Number
 
-    tidx, token = tlist.token_next_by(i=I_ALIAS, t=T.Number)
-    while token:
-        nidx, next_ = tlist.token_next(tidx)
-        if isinstance(next_, sql.Identifier):
-            tlist.group_tokens(sql.Identifier, tidx, nidx, extend=True)
-        tidx, token = tlist.token_next_by(i=I_ALIAS, t=T.Number, idx=tidx)
+    def match(token):
+        return isinstance(token, sql.Identifier)
+
+    def valid_prev(token):
+        return imt(token, i=sqlcls, t=ttypes)
+
+    def valid_next(token):
+        return True
+
+    def post(tlist, pidx, tidx, nidx):
+        return pidx, tidx
+
+    _group(tlist, sql.Identifier, match,
+           valid_prev, valid_next, post, extend=True)
 
 
 @recurse(sql.Function)

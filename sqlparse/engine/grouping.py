@@ -21,7 +21,7 @@ def _group_matching(tlist, cls):
     for idx, token in enumerate(list(tlist)):
         tidx = idx - tidx_offset
 
-        if token.is_whitespace():
+        if token.is_whitespace:
             # ~50% of tokens will be whitespace. Will checking early
             # for them avoid 3 comparisons, but then add 1 more comparison
             # for the other ~50% of tokens...
@@ -371,7 +371,7 @@ def _group(tlist, cls, match,
     for idx, token in enumerate(list(tlist)):
         tidx = idx - tidx_offset
 
-        if token.is_whitespace():
+        if token.is_whitespace:
             continue
 
         if skip_cm and token.ttype in T.Comment:
@@ -399,7 +399,7 @@ def group_clauses(tlist, cls, clause=None, i=None):
     for idx, token in enumerate(list(tlist)):
         tidx = idx - tidx_offset
 
-        if token.is_whitespace():
+        if token.is_whitespace:
             continue
 
         if token.is_group() and not isinstance(token, cls):

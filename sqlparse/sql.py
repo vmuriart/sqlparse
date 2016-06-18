@@ -24,7 +24,8 @@ class Token(object):
     the type of the token.
     """
 
-    __slots__ = ('value', 'ttype', 'parent', 'normalized', 'is_keyword')
+    __slots__ = ('value', 'ttype', 'parent', 'normalized', 'is_keyword',
+                 'is_whitespace')
 
     def __init__(self, ttype, value):
         value = text_type(value)
@@ -32,6 +33,7 @@ class Token(object):
         self.ttype = ttype
         self.parent = None
         self.is_keyword = ttype in T.Keyword
+        self.is_whitespace = ttype in T.Whitespace
         self.normalized = value.upper() if self.is_keyword else value
 
     def __str__(self):
@@ -96,10 +98,6 @@ class Token(object):
     def is_group(self):
         """Returns ``True`` if this object has children."""
         return False
-
-    def is_whitespace(self):
-        """Return ``True`` if this token is a whitespace token."""
-        return self.ttype in T.Whitespace
 
     def within(self, group_cls):
         """Returns ``True`` if this token is within *group_cls*.
@@ -236,7 +234,7 @@ class TokenList(Token):
         ignored too.
         """
         # this on is inconsistent, using Comment instead of T.Comment...
-        funcs = lambda tk: not ((skip_ws and tk.is_whitespace()) or
+        funcs = lambda tk: not ((skip_ws and tk.is_whitespace) or
                                 (skip_cm and imt(tk, t=T.Comment)))
         return self._token_matching(funcs)[1]
 
@@ -257,7 +255,7 @@ class TokenList(Token):
         if idx is None:
             return None, None
         idx += 1  # alot of code usage current pre-compensates for this
-        funcs = lambda tk: not ((skip_ws and tk.is_whitespace()) or
+        funcs = lambda tk: not ((skip_ws and tk.is_whitespace) or
                                 (skip_cm and imt(tk, t=T.Comment)))
         return self._token_matching(funcs, idx, reverse=True)
 
@@ -270,7 +268,7 @@ class TokenList(Token):
         if idx is None:
             return None, None
         idx += 1  # alot of code usage current pre-compensates for this
-        funcs = lambda tk: not ((skip_ws and tk.is_whitespace()) or
+        funcs = lambda tk: not ((skip_ws and tk.is_whitespace) or
                                 (skip_cm and imt(tk, t=T.Comment)))
         return self._token_matching(funcs, idx)
 
@@ -287,7 +285,7 @@ class TokenList(Token):
 
         end_idx = end + include_end
 
-        while self.tokens[end_idx - 1].is_whitespace():
+        while self.tokens[end_idx - 1].is_whitespace:
             end_idx -= 1
 
         if extend and isinstance(start, grp_cls):
@@ -462,7 +460,7 @@ class IdentifierList(TokenList):
         Whitespaces and punctuations are not included in this generator.
         """
         for token in self.tokens:
-            if not (token.is_whitespace() or token.match(T.Punctuation, ',')):
+            if not (token.is_whitespace or token.match(T.Punctuation, ',')):
                 yield token
 
 
@@ -656,7 +654,7 @@ class ComparisonList(TokenList):
 
     def get_comparisons(self):
         for token in self.tokens:
-            if not (token.is_whitespace() or imt(token, m=self.M_SEPARATOR)):
+            if not (token.is_whitespace or imt(token, m=self.M_SEPARATOR)):
                 yield token
 
 

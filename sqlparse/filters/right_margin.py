@@ -23,7 +23,7 @@ class RightMarginFilter(object):
 
     def _process(self, group, stream):
         for token in stream:
-            if token.is_whitespace() and '\n' in token.value:
+            if token.is_whitespace and '\n' in token.value:
                 if token.value.endswith('\n'):
                     self.line = ''
                 else:

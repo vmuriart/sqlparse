@@ -249,21 +249,8 @@ def group_identifier_list(tlist):
            valid_prev, valid_next, post, extend=True, skip_cm=True)
 
 
-@recurse(sql.Where)
 def group_where(tlist):
-    tidx, token = tlist.token_next_by(m=sql.Where.M_OPEN)
-    while token:
-        eidx, end = tlist.token_next_by(m=sql.Where.M_CLOSE, idx=tidx)
-
-        if end is None:
-            end = tlist._groupable_tokens[-1]
-        else:
-            end = tlist.tokens[eidx - 1]
-        # TODO: convert this to eidx instead of end token.
-        # i think above values are len(tlist) and eidx-1
-        eidx = tlist.token_index(end)
-        tlist.group_tokens(sql.Where, tidx, eidx)
-        tidx, token = tlist.token_next_by(m=sql.Where.M_OPEN, idx=tidx)
+    group_clauses(tlist, sql.Where)
 
 
 def group_aliased(tlist):
@@ -398,3 +385,32 @@ def _group(tlist, cls, match,
                 continue
 
         pidx, prev_ = tidx, token
+
+
+def group_clauses(tlist, cls, clause=None, i=None):
+    tidx_offset = 0
+    start_idx, start_token = None, None
+    for idx, token in enumerate(list(tlist)):
+        tidx = idx - tidx_offset
+
+        if token.is_whitespace():
+            continue
+
+        if token.is_group() and not isinstance(token, cls):
+            group_clauses(token, cls, clause, i)
+
+        if token.match(*cls.M_OPEN):
+            start_idx, start_token = tidx, token
+            continue
+
+        if start_token is not None and token.match(*cls.M_CLOSE):
+            tlist.group_tokens(cls, start_idx, tidx - 1)
+            tidx_offset += tidx - 1 - start_idx
+            start_idx, start_token = None, None
+
+    if start_token is not None:
+        # TODO: convert this to eidx instead of end token.
+        # i think above values are len(tlist) and eidx-1
+        end = tlist._groupable_tokens[-1]
+        eidx = tlist.token_index(end)
+        tlist.group_tokens(cls, start_idx, eidx)

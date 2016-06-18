@@ -27,7 +27,7 @@ def _group_matching(tlist, cls):
             # for the other ~50% of tokens...
             continue
 
-        if token.is_group() and not isinstance(token, cls):
+        if token.is_group and not isinstance(token, cls):
             # Check inside previously grouped (ie. parenthesis) if group
             # of differnt type is inside (ie, case). though ideally  should
             # should check for all open/close tokens at once to avoid recursion
@@ -377,7 +377,7 @@ def _group(tlist, cls, match,
         if skip_cm and token.ttype in T.Comment:
             continue
 
-        if recurse and token.is_group() and not isinstance(token, cls):
+        if recurse and token.is_group and not isinstance(token, cls):
             _group(token, cls, match, valid_prev, valid_next, post, extend)
 
         if match(token):
@@ -402,7 +402,7 @@ def group_clauses(tlist, cls, clause=None, i=None):
         if token.is_whitespace:
             continue
 
-        if token.is_group() and not isinstance(token, cls):
+        if token.is_group and not isinstance(token, cls):
             group_clauses(token, cls, clause, i)
 
         if token.match(*cls.M_OPEN):

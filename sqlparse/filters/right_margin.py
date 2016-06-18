@@ -28,7 +28,7 @@ class RightMarginFilter(object):
                     self.line = ''
                 else:
                     self.line = token.value.splitlines()[-1]
-            elif token.is_group() and type(token) not in self.keep_together:
+            elif token.is_group and type(token) not in self.keep_together:
                 token.tokens = self._process(token, token.tokens)
             else:
                 val = text_type(token)

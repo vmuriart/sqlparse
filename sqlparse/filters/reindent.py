@@ -23,7 +23,7 @@ class ReindentFilter(object):
 
     def _flatten_up_to_token(self, token):
         """Yields all tokens up to token but excluding current."""
-        if token.is_group():
+        if token.is_group:
             token = next(token.flatten())
 
         for t in self._curr_stmt.flatten():

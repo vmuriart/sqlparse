@@ -25,13 +25,14 @@ class Token(object):
     """
 
     __slots__ = ('value', 'ttype', 'parent', 'normalized', 'is_keyword',
-                 'is_whitespace')
+                 'is_whitespace', 'is_group')
 
     def __init__(self, ttype, value):
         value = text_type(value)
         self.value = value
         self.ttype = ttype
         self.parent = None
+        self.is_group = False
         self.is_keyword = ttype in T.Keyword
         self.is_whitespace = ttype in T.Whitespace
         self.normalized = value.upper() if self.is_keyword else value
@@ -95,10 +96,6 @@ class Token(object):
 
         return self.normalized in values
 
-    def is_group(self):
-        """Returns ``True`` if this object has children."""
-        return False
-
     def within(self, group_cls):
         """Returns ``True`` if this token is within *group_cls*.
 
@@ -140,6 +137,7 @@ class TokenList(Token):
         self.tokens = tokens or []
         [setattr(token, 'parent', self) for token in tokens]
         super(TokenList, self).__init__(None, text_type(self))
+        self.is_group = True
 
     def __str__(self):
         return ''.join(token.value for token in self.flatten())
@@ -166,7 +164,7 @@ class TokenList(Token):
             print("{indent}{idx:2d} {cls} '{value}'"
                   .format(**locals()), file=f)
 
-            if token.is_group() and (max_depth is None or depth < max_depth):
+            if token.is_group and (max_depth is None or depth < max_depth):
                 token._pprint_tree(max_depth, depth + 1, f)
 
     def get_token_at_offset(self, offset):
@@ -184,18 +182,15 @@ class TokenList(Token):
         This method is recursively called for all child tokens.
         """
         for token in self.tokens:
-            if token.is_group():
+            if token.is_group:
                 for item in token.flatten():
                     yield item
             else:
                 yield token
 
-    def is_group(self):
-        return True
-
     def get_sublists(self):
         for token in self.tokens:
-            if token.is_group():
+            if token.is_group:
                 yield token
 
     @property

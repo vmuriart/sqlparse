@@ -41,8 +41,10 @@ class Token(object):
         return self.value
 
     # Pending tokenlist __len__ bug fix
-    # def __len__(self):
-    #     return len(self.value)
+    # bug dissapeared... don't know how/when though.
+    # if weird behavior appears, comment this out and tokenlists.__len__ out
+    def __len__(self):
+        return len(self.value)
 
     def __repr__(self):
         cls = self._get_repr_name()
@@ -142,9 +144,8 @@ class TokenList(Token):
     def __str__(self):
         return ''.join(token.value for token in self.flatten())
 
-    # weird bug
-    # def __len__(self):
-    #     return len(self.tokens)
+    def __len__(self):
+        return len(self.tokens)
 
     def __iter__(self):
         return iter(self.tokens)

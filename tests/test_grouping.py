@@ -180,7 +180,7 @@ def test_grouping_where():
     s = 'select * from foo where bar = 1 order by id desc'
     p = sqlparse.parse(s)[0]
     assert str(p) == s
-    assert len(p.tokens) == 14
+    assert len(p.tokens) == 15
 
     s = 'select x from (select y from foo where bar = 1) z'
     p = sqlparse.parse(s)[0]

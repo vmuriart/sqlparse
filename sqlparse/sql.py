@@ -292,9 +292,8 @@ class TokenList(Token):
 
         end_idx = end + include_end
 
-        # will be needed later for new group_clauses
-        # while skip_ws and tokens and tokens[-1].is_whitespace():
-        #     tokens = tokens[:-1]
+        while self.tokens[end_idx - 1].is_whitespace():
+            end_idx -= 1
 
         if extend and isinstance(start, grp_cls):
             subtokens = self.tokens[start_idx + 1:end_idx]

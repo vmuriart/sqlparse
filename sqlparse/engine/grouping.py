@@ -316,8 +316,13 @@ def group(stmt):
         group_for,
         group_begin,
 
-        group_functions,
+        group_select,
+        group_from,
         group_where,
+        group_group_by,
+        group_order_by,
+
+        group_functions,
         group_period,
         group_arrays,
         group_identifier,
@@ -329,6 +334,10 @@ def group(stmt):
         group_assignment,
         group_comparison,
 
+        group_identifier,
+        group_order,
+
+        group_table_stmt,
         group_identifier_list,
     ]:
         func(stmt)

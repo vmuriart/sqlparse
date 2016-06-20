@@ -258,6 +258,7 @@ def group_aliased(tlist):
         return imt(token, i=sqlcls, t=ttypes)
 
     def post(tlist, pidx, tidx, nidx):
+        tlist[tidx].ttype = T.Alias
         return pidx, tidx
 
     _group(tlist, sql.Identifier, match,

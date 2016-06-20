@@ -326,16 +326,8 @@ class TokenList(Token):
 
     def get_alias(self):
         """Returns the alias for this identifier or ``None``."""
-
-        # "name AS alias"
-        kw_idx, kw = self.token_next_by(m=(T.Keyword, 'AS'))
-        if kw is not None:
-            return self._get_first_name(kw_idx + 1, keywords=True)
-
-        # "name alias" or "complicated column expression alias"
-        _, ws = self.token_next_by(t=T.Whitespace)
-        if len(self.tokens) > 2 and ws is not None:
-            return self._get_first_name(reverse=True)
+        _, alias = self.token_next_by(t=T.Alias)
+        return remove_quotes(alias.value) if alias is not None else None
 
     def get_name(self):
         """Returns the name of this identifier.
@@ -361,19 +353,16 @@ class TokenList(Token):
         _, prev_ = self.token_prev(dot_idx)
         return remove_quotes(prev_.value) if prev_ is not None else None
 
-    def _get_first_name(self, idx=None, reverse=False, keywords=False):
+    def _get_first_name(self, idx=None):
         """Returns the name of the first token with a name"""
 
         tokens = self.tokens[idx:] if idx else self.tokens
-        tokens = reversed(tokens) if reverse else tokens
         types = [T.Name, T.Wildcard, T.String.Symbol, T.Alias]
-
-        if keywords:
-            types.append(T.Keyword)
 
         for token in tokens:
             if token.ttype in types:
                 return remove_quotes(token.value)
+            # this is probably a result of nesting identifiers.
             elif isinstance(token, (Identifier, Function)):
                 return token.get_name()
 

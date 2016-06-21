@@ -21,6 +21,7 @@ SQL_REGEX = {
     'root': [
         (r'(--|# )\+.*?(\r\n|\r|\n|$)', tokens.Comment.Single.Hint),
         (r'/\*\+[\s\S]*?\*/', tokens.Comment.Multiline.Hint),
+        (r'/\*\![\s\S]*?\*/', tokens.Comment.Multiline.Code),
 
         (r'(--|# ).*?(\r\n|\r|\n|$)', tokens.Comment.Single),
         (r'/\*[\s\S]*?\*/', tokens.Comment.Multiline),

@@ -11,6 +11,8 @@
 
 """Tokens"""
 
+import sqlparse.sql
+
 
 class _TokenType(tuple):
     parent = None
@@ -29,9 +31,8 @@ class _TokenType(tuple):
         return 'Token' + ('.' if self else '') + '.'.join(self)
 
     def __call__(self, *args, **kwargs):
-        # FIXME: couldn't import otherwise
-        Token = __import__("sqlparse.sql.Token")
-        return Token(self, *args, **kwargs)
+        return sqlparse.sql.Token(self, *args, **kwargs)
+
 
 Token = _TokenType()
 

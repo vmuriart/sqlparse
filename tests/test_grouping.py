@@ -192,8 +192,8 @@ def test_returning_kw_ends_where_clause():
     s = 'delete from foo where x > y returning z'
     p = sqlparse.parse(s)[0]
     assert isinstance(p.tokens[6], sql.Where)
-    assert p.tokens[7].ttype == T.Keyword
-    assert p.tokens[7].value == 'returning'
+    assert p.tokens[8].ttype == T.Keyword
+    assert p.tokens[8].value == 'returning'
 
 
 def test_grouping_typecast():

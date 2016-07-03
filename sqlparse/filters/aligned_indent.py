@@ -56,7 +56,8 @@ class AlignedIndentFilter(object):
             # de-indent last parenthesis
             tlist.insert_before(tlist[-1], self.nl())
         else:
-            self._process_default(tlist)
+            with offset(self, -1):
+                self._process_default(tlist)
 
     def _process_identifierlist(self, tlist):
         # columns being selected

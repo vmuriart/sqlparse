@@ -90,7 +90,7 @@ class AlignedIndentFilter(object):
 
     def _process_default(self, tlist):
         tidx_offset = 0
-        pidx, prev_ = None, None  # previous keyword match
+        _, prev_kw = None, None  # previous keyword match
         _, prev_tk = None, None  # previous token
         for idx, token in enumerate(list(tlist)):
             tidx = idx + tidx_offset
@@ -104,24 +104,27 @@ class AlignedIndentFilter(object):
                 with offset(self, offset_):
                     self._process(token)
 
-            if token.match(T.Keyword, self.split_words, regex=True):
-                if token.normalized == 'BETWEEN':
-                    pidx, prev_ = tidx, token
-                    continue
-                if token.normalized == 'AND' and prev_.normalized == 'BETWEEN':
-                    pidx, prev_ = tidx, token
-                    continue
+            if not token.match(T.Keyword, self.split_words, regex=True):
+                _, prev_tk = tidx, token
+                continue
 
-                if token.match(T.Keyword, self.join_words, regex=True):
-                    token_indent = token.value.split()[0]
-                else:
-                    token_indent = text_type(token)
+            if token.normalized == 'BETWEEN':
+                _, prev_kw = tidx, token
+                continue
 
-                tlist.insert_before(token, self.nl(token_indent))
-                tidx_offset += 1
+            if token.normalized == 'AND' and prev_kw.normalized == 'BETWEEN':
+                _, prev_kw = tidx, token
+                continue
 
-                pidx, prev_ = tidx, token
-            _, prev_tk = tidx, token
+            if token.match(T.Keyword, self.join_words, regex=True):
+                token_indent = token.value.split()[0]
+            else:
+                token_indent = text_type(token)
+
+            tlist.insert_before(token, self.nl(token_indent))
+            tidx_offset += 1
+
+            _, prev_kw = _, prev_tk = tidx, token
 
     def _process(self, tlist):
         func_name = '_process_{cls}'.format(cls=type(tlist).__name__)

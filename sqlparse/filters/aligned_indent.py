@@ -112,7 +112,8 @@ class AlignedIndentFilter(object):
                 _, prev_kw = tidx, token
                 continue
 
-            if token.normalized == 'AND' and prev_kw.normalized == 'BETWEEN':
+            if (token.normalized == 'AND' and prev_kw is not None and
+                        prev_kw.normalized == 'BETWEEN'):
                 _, prev_kw = tidx, token
                 continue
 

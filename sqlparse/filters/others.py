@@ -33,6 +33,7 @@ class StripWhitespaceFilter(object):
                 tlist.tokens.remove(last_nl)
             last_nl = token if token.is_whitespace else None
 
+            # # Add space after comma.
             # next_ = tlist.token_next(token, skip_ws=False)
             # if (next_ and not next_.is_whitespace and
             #             token.ttype is T.Punctuation and token.value == ','):
@@ -40,9 +41,9 @@ class StripWhitespaceFilter(object):
         return self._stripws_default(tlist)
 
     def _stripws_parenthesis(self, tlist):
-        if tlist.tokens[1].is_whitespace:
+        while tlist.tokens[1].is_whitespace:
             tlist.tokens.pop(1)
-        if tlist.tokens[-2].is_whitespace:
+        while tlist.tokens[-2].is_whitespace:
             tlist.tokens.pop(-2)
         self._stripws_default(tlist)
 

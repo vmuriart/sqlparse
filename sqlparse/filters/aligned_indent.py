@@ -88,27 +88,32 @@ class AlignedIndentFilter(object):
                     max_cond_width - condition_width[i]))
                 tlist.insert_after(cond[-1], ws)
 
-    def _next_token(self, tlist, idx=-1):
-        split_words = T.Keyword, self.split_words, True
-        tidx, token = tlist.token_next_by(m=split_words, idx=idx)
-        # treat "BETWEEN x and y" as a single statement
-        if token and token.normalized == 'BETWEEN':
-            tidx, token = self._next_token(tlist, tidx)
-            if token and token.normalized == 'AND':
-                tidx, token = self._next_token(tlist, tidx)
-        return tidx, token
-
     def _split_kwds(self, tlist):
-        tidx, token = self._next_token(tlist)
-        while token:
-            # joins are special case. only consider the first word as aligner
-            if token.match(T.Keyword, self.join_words, regex=True):
-                token_indent = token.value.split()[0]
-            else:
-                token_indent = text_type(token)
-            tlist.insert_before(token, self.nl(token_indent))
-            tidx += 1
-            tidx, token = self._next_token(tlist, tidx)
+        tidx_offset = 0
+        pidx, prev_ = None, None  # previous keyword match
+        for idx, token in enumerate(list(tlist)):
+            tidx = idx + tidx_offset
+
+            if token.is_whitespace:
+                continue
+
+            if token.match(T.Keyword, self.split_words, regex=True):
+                if token.normalized == 'BETWEEN':
+                    pidx, prev_ = tidx, token
+                    continue
+                if token.normalized == 'AND' and prev_.normalized == 'BETWEEN':
+                    pidx, prev_ = tidx, token
+                    continue
+
+                if token.match(T.Keyword, self.join_words, regex=True):
+                    token_indent = token.value.split()[0]
+                else:
+                    token_indent = text_type(token)
+
+                tlist.insert_before(token, self.nl(token_indent))
+                tidx_offset += 1
+
+                pidx, prev_ = tidx, token
 
     def _process_default(self, tlist):
         self._split_kwds(tlist)

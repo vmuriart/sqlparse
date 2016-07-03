@@ -88,14 +88,21 @@ class AlignedIndentFilter(object):
                     max_cond_width - condition_width[i]))
                 tlist.insert_after(cond[-1], ws)
 
-    def _split_kwds(self, tlist):
+    def _process_default(self, tlist):
         tidx_offset = 0
         pidx, prev_ = None, None  # previous keyword match
+        _, prev_tk = None, None  # previous token
         for idx, token in enumerate(list(tlist)):
             tidx = idx + tidx_offset
 
             if token.is_whitespace:
                 continue
+
+            if token.is_group:
+                # HACK: make "group/order by" work. Longer than max_len.
+                offset_ = 3 if (prev_tk and prev_tk.normalized == 'BY') else 0
+                with offset(self, offset_):
+                    self._process(token)
 
             if token.match(T.Keyword, self.split_words, regex=True):
                 if token.normalized == 'BETWEEN':
@@ -114,17 +121,7 @@ class AlignedIndentFilter(object):
                 tidx_offset += 1
 
                 pidx, prev_ = tidx, token
-
-    def _process_default(self, tlist):
-        self._split_kwds(tlist)
-        # process any sub-sub statements
-        for sgroup in tlist.get_sublists():
-            idx = tlist.token_index(sgroup)
-            pidx, prev_ = tlist.token_prev(idx)
-            # HACK: make "group/order by" work. Longer than max_len.
-            offset_ = 3 if (prev_ and prev_.match(T.Keyword, 'BY')) else 0
-            with offset(self, offset_):
-                self._process(sgroup)
+            _, prev_tk = tidx, token
 
     def _process(self, tlist):
         func_name = '_process_{cls}'.format(cls=type(tlist).__name__)

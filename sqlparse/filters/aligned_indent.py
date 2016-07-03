@@ -114,7 +114,7 @@ class AlignedIndentFilter(object):
                 continue
 
             if (token.normalized == 'AND' and prev_kw is not None and
-                        prev_kw.normalized == 'BETWEEN'):
+                    prev_kw.normalized == 'BETWEEN'):
                 prev_kw = token
                 continue
 

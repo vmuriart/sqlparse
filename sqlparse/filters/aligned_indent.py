@@ -15,11 +15,11 @@ class AlignedIndentFilter(object):
                   r'(INNER\s+|OUTER\s+|STRAIGHT\s+)?|'
                   r'(CROSS\s+|NATURAL\s+)?)?JOIN\b')
     split_words = ('FROM',
-                   join_words, 'ON',
-                   'WHERE', 'AND', 'OR',
+                   join_words, r'\bON\b',
+                   'WHERE', r'\bAND\b', r'\bOR\b',
                    'GROUP', 'HAVING', 'LIMIT',
                    'ORDER', 'UNION', 'VALUES',
-                   'SET', 'BETWEEN', 'EXCEPT')
+                   '\bSET\b', 'BETWEEN', 'EXCEPT')
 
     def __init__(self, char=' ', n='\n'):
         self.n = n

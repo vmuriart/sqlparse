@@ -19,9 +19,13 @@ class StripWhitespaceFilter(object):
     def _stripws_default(tlist):
         last_was_ws = False
         is_first_char = True
-        for token in tlist.tokens:
+        for token in list(tlist.tokens):
             if token.is_whitespace:
-                token.value = '' if last_was_ws or is_first_char else ' '
+                if last_was_ws or is_first_char:
+                    tlist.tokens.remove(token)
+                    continue  # continue to remove multiple ws on first char
+                else:
+                    token.value = ' '
             last_was_ws = token.is_whitespace
             is_first_char = False
 
@@ -35,7 +39,7 @@ class StripWhitespaceFilter(object):
 
             # # Add space after comma.
             # next_ = tlist.token_next(token, skip_ws=False)
-            # if (next_ and not next_.is_whitespace and
+            # if (next_ is not None and not next_.is_whitespace and
             #             token.ttype is T.Punctuation and token.value == ','):
             #     tlist.insert_after(token, sql.Token(T.Whitespace, ' '))
         return self._stripws_default(tlist)

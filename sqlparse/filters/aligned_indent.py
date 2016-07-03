@@ -42,7 +42,7 @@ class AlignedIndentFilter(object):
             tlist.tokens.pop(0)
 
         # process the main query body
-        self._process(sql.TokenList(tlist.tokens))
+        self._process_default(tlist)
 
     def _process_parenthesis(self, tlist):
         # if this isn't a subquery, don't re-indent

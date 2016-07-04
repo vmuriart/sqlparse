@@ -454,11 +454,6 @@ class Parenthesis(TokenList):
     M_OPEN = T.Punctuation, '('
     M_CLOSE = T.Punctuation, ')'
 
-    def __init__(self, tokens):
-        super(Parenthesis, self).__init__(tokens)
-        self.group_tokens(TokenList, start=1, end=len(tokens) - 1,
-                          include_end=False)
-
     @property
     def _groupable_tokens(self):
         return self.tokens[1:-1]

@@ -305,33 +305,8 @@ def group_order(tlist):
            valid_prev, post=post, extend=False, recurse=False)
 
 
-def group(stmt, advanced=False, pre=None):
+def group(stmt):
     funcs = [
-        # _group_matching
-        group_brackets,
-        group_parenthesis,
-        group_case,
-        group_if,
-        group_for,
-        group_begin,
-
-        group_functions,
-        group_where,
-        group_period,
-        group_arrays,
-        group_identifier,
-        group_operator,
-        group_order,
-        group_typecasts,
-        group_as,
-        group_aliased,
-        group_assignment,
-        group_comparison,
-
-        group_identifier_list,
-
-    ] if advanced is False else [
-
         # _group_matching
         group_brackets,
         group_parenthesis,

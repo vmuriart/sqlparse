@@ -26,6 +26,7 @@ class AlignedIndentFilter(object):
         self.offset = 0
         self.indent = 0
         self.char = char
+        self.curr_stmt = None
         self._max_kwd_len = len('select')
 
     def nl(self, offset=1):
@@ -133,6 +134,7 @@ class AlignedIndentFilter(object):
         func(tlist)
 
     def process(self, stmt):
+        self.curr_stmt = stmt
         self._process(stmt)
         return stmt
 
@@ -140,3 +142,17 @@ class AlignedIndentFilter(object):
     def leading_ws(self):
         return (self._max_kwd_len + self.offset +
                 self.indent * (2 + self._max_kwd_len))
+
+    def flatten_up_to(self, token):
+        """Yields all tokens up to token but excluding current."""
+        if isinstance(token, sql.TokenList):
+            token = next(token.flatten())
+
+        for t in self.curr_stmt.flatten():
+            if t == token:
+                raise StopIteration
+            yield t
+
+    def get_offset(self, token):
+        raw = ''.join(map(text_type, self.flatten_up_to(token)))
+        return len(raw.splitlines()[-1]) - self.leading_ws

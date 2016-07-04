@@ -32,10 +32,9 @@ class AlignedIndentFilter(object):
         # offset = 1 represent a single space after SELECT
         offset = -len(offset) if not isinstance(offset, int) else offset
         # add two for the space and parens
-        indent = self.indent * (2 + self._max_kwd_len)
 
         return sql.Token(T.Whitespace, self.n + self.char * (
-            self._max_kwd_len + offset + indent + self.offset))
+            self.leading_ws + offset))
 
     def _process_statement(self, tlist):
         if tlist.tokens[0].is_whitespace and self.indent == 0:
@@ -136,3 +135,8 @@ class AlignedIndentFilter(object):
     def process(self, stmt):
         self._process(stmt)
         return stmt
+
+    @property
+    def leading_ws(self):
+        return (self._max_kwd_len + self.offset +
+                self.indent * (2 + self._max_kwd_len))

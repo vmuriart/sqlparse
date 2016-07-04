@@ -62,8 +62,10 @@ class AlignedIndentFilter(object):
     def _process_identifierlist(self, tlist):
         # columns being selected
         identifiers = list(tlist.get_identifiers())
-        identifiers.pop(0)
-        [tlist.insert_before(token, self.nl()) for token in identifiers]
+        t0 = identifiers.pop(0)
+        with offset(self, self.get_offset(t0)):
+            [tlist.insert_before(token, self.nl(0)) for token in
+             identifiers]
         self._process_default(tlist)
 
     def _process_case(self, tlist):

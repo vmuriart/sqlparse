@@ -114,7 +114,7 @@ def group_period(tlist):
 
 def group_as(tlist):
     def match(token):
-        return token.is_keyword and token.normalized == 'AS'
+        return token.normalized == 'AS'
 
     def valid_prev(token):
         return token.normalized == 'NULL' or not token.is_keyword
@@ -158,7 +158,7 @@ def group_comparison(tlist):
     def valid(token):
         if imt(token, t=ttypes, i=sqlcls):
             return True
-        elif token and token.is_keyword and token.normalized == 'NULL':
+        elif token and token.normalized == 'NULL':
             return True
         else:
             return False
@@ -269,9 +269,9 @@ def group_functions(tlist):
     has_create = False
     has_table = False
     for tmp_token in tlist.tokens:
-        if tmp_token.value == 'CREATE':
+        if tmp_token.normalized == 'CREATE':
             has_create = True
-        if tmp_token.value == 'TABLE':
+        if tmp_token.normalized == 'TABLE':
             has_table = True
     if has_create and has_table:
         return

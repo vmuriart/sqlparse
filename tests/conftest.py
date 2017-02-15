@@ -7,6 +7,9 @@ import os
 
 import pytest
 
+def pytest_report_header(config):
+    return "project deps: mylib-1.1"
+
 DIR_PATH = os.path.dirname(__file__)
 FILES_DIR = os.path.join(DIR_PATH, 'files')
 

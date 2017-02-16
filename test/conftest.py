@@ -17,8 +17,6 @@ def pytest_report_header(config):
     """Generate extra report headers"""
     is_64bits = sys.maxsize > 2**32
     arch = "x64" if is_64bits else "x86"
-    arch = "Arch: {0}".format(arch)
-
     ucs = ctypes.sizeof(ctypes.c_wchar)
     libdir = sysconfig.get_config_var("LIBDIR")
     shared = bool(sysconfig.get_config_var("Py_ENABLE_SHARED"))

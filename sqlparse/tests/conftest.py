@@ -7,6 +7,7 @@ import os
 
 import pytest
 
+
 def pytest_report_header(config):
     return "project deps: mylib-1.1"
 

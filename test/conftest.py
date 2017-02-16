@@ -20,15 +20,13 @@ def pytest_report_header(config):
     arch = "Arch: {0}".format(arch)
 
     ucs = ctypes.sizeof(ctypes.c_wchar)
-    ucs = "UCS: {0}".format(ucs)
-
     libdir = sysconfig.get_config_var("LIBDIR")
-    libdir = "LIBDIR: {0}".format(libdir)
+    shared = bool(sysconfig.get_config_var("Py_ENABLE_SHARED"))
 
-    shared = sysconfig.get_config_var("Py_ENABLE_SHARED")
-    shared = "Py_ENABLE_SHARED: {0}".format(bool(shared))
+    output = ("Arch: {arch}, UCS: {ucs}, LIBDIR: {libdir}, "
+              "Py_ENABLE_SHARED: {shared}".format(**locals()))
 
-    return (arch, ucs, libdir, shared, )
+    return output
 
 
 DIR_PATH = os.path.dirname(__file__)

@@ -26,7 +26,7 @@ def pytest_report_header(config):
     libdir = "LIBDIR: {0}".format(libdir)
 
     shared = sysconfig.get_config_var("Py_ENABLE_SHARED")
-    shared = "Py_ENABLE_SHARED: {0}".format(shared)
+    shared = "Py_ENABLE_SHARED: {0}".format(bool(shared))
 
     return (arch, ucs, libdir, shared, )
 

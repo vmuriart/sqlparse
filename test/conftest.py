@@ -29,6 +29,7 @@ def pytest_report_header(config):
 DIR_PATH = os.path.dirname(__file__)
 FILES_DIR = os.path.join(DIR_PATH, 'files')
 
+import faaaake
 
 @pytest.fixture()
 def filepath():
